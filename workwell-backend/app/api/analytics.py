@@ -15,29 +15,34 @@ def get_db():
     finally:
         db.close()
 
-@router.get("/summary")
-def get_summary(db: Session = Depends(get_db)):
+@router.get("/summary/{user_id}")
+def get_summary(
+    user_id: str,
+    db: Session = Depends(get_db)
+):
 
-    avg_mood = db.query(
+    entries = db.query(WellnessEntry).filter(
+        WellnessEntry.user_id == user_id
+    )
+
+    avg_mood = entries.with_entities(
         func.avg(WellnessEntry.mood_score)
     ).scalar()
 
-    avg_stress = db.query(
+    avg_stress = entries.with_entities(
         func.avg(WellnessEntry.stress_level)
     ).scalar()
 
-    avg_burnout = db.query(
+    avg_burnout = entries.with_entities(
         func.avg(WellnessEntry.burnout_risk)
     ).scalar()
 
-    total_entries = db.query(
-        WellnessEntry
-    ).count()
+    total_entries = entries.count()
 
     return {
-        "average_mood": avg_mood,
-        "average_stress": avg_stress,
-        "average_burnout": avg_burnout,
+        "average_mood": round(avg_mood or 0, 1),
+        "average_stress": round(avg_stress or 0, 1),
+        "average_burnout": round(avg_burnout or 0, 1),
         "total_entries": total_entries
     }
 @router.get("/ai-insight/{user_id}")
