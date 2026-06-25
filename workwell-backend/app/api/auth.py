@@ -28,23 +28,30 @@ def get_db():
 
 @router.post("/signup")
 def signup(user: UserCreate, db: Session = Depends(get_db)):
+    try:
+        hashed_pw = hash_password(user.password)
 
-    hashed_pw = hash_password(user.password)
+        new_user = User(
+            name=user.name,
+            email=user.email,
+            password_hash=hashed_pw
+        )
 
-    new_user = User(
-        name=user.name,
-        email=user.email,
-        password_hash=hashed_pw
-    )
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
 
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+        return {
+            "message": "User created successfully",
+            "user_id": str(new_user.id)
+        }
 
-    return {
-        "message": "User created successfully",
-        "user_id": str(new_user.id)
-    }
+    except Exception as e:
+        db.rollback()
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    
 @router.post("/login")
 def login(user: UserLogin, db: Session = Depends(get_db)):
 
