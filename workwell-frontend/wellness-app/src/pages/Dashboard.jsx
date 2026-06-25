@@ -37,9 +37,11 @@ function Dashboard() {
 
 const checkVoiceStatus = async () => {
   try {
-    const response = await API.get(
-      "/voice/status/demo-user"
-    );
+    const userId = localStorage.getItem("user_id");
+
+const response = await API.get(
+  `/voice/status/${userId}`
+);
 
     setVoiceStatus(
       response.data.completed_today
@@ -48,23 +50,24 @@ const checkVoiceStatus = async () => {
     console.log(error);
   }
 };
-  const fetchAnalytics = async () => {
-    try {
-      setLoading(true);
+ const fetchAnalytics = async () => {
+  try {
+    setLoading(true);
 
-      const response = await API.get("/analytics/summary");
+    const userId = localStorage.getItem("user_id");
 
-      console.log("Analytics:", response.data);
-      console.log("Response:", response);
-      console.log("Data:", response.data);
-      setAnalytics(response.data);
-    } catch (error) {
-      console.error(error);
-      alert("Failed to load analytics");
-    } finally {
-      setLoading(false);
-    }
-  };
+    const response = await API.get(
+      `/analytics/summary/${userId}`
+    );
+
+    setAnalytics(response.data);
+  } catch (error) {
+    console.error(error);
+    alert("Failed to load analytics");
+  } finally {
+    setLoading(false);
+  }
+};
 const fetchHistory = async () => {
   try {
     const userId =
