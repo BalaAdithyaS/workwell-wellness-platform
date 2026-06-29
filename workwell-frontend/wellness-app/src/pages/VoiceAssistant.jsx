@@ -88,7 +88,7 @@ function VoiceAssistant() {
     };
   };
 
-  const nextQuestion = async () => {
+const nextQuestion = async () => {
 
   if (!answer) {
     alert("Please answer first");
@@ -104,43 +104,39 @@ function VoiceAssistant() {
   ];
 
   setConversation(updatedConversation);
-
   setAnswer("");
 
   try {
 
-    const response =
-      await API.post(
-        "/voice/next-question",
+    const response = await API.post(
+      "/voice/next-question",
+      {
+        conversation: updatedConversation,
+      }
+    );
+
+    if (response.data.done) {
+
+      const userId = localStorage.getItem("user_id");
+
+      const finalResponse = await API.post(
+        "/voice/final-analysis",
         {
-          conversation:
-            updatedConversation,
+          user_id: userId,
+          conversation: updatedConversation,
         }
       );
 
-    if (response.data.done) {
-      const userId = localStorage.getItem("user_id");
-      const finalResponse =
-        await API.post(
-  "/voice/final-analysis",
-  {
-    user_id: userId,
-    conversation: finalConversation,
-  }
-);
-
-      const parsed =
-        JSON.parse(
-          finalResponse.data.analysis
-        );
+      const parsed = JSON.parse(
+        finalResponse.data.analysis
+      );
 
       setAnalysis(parsed);
 
       return;
     }
 
-    const nextQ =
-      response.data.question;
+    const nextQ = response.data.question;
 
     setCurrentQuestion(nextQ);
 
@@ -148,41 +144,11 @@ function VoiceAssistant() {
 
   } catch (error) {
 
-    console.log(error);
+    console.error("Next Question Error:", error);
 
   }
+
 };
-
-  const finishConversation = async () => {
-    try {
-      const finalConversation = [
-        ...conversation,
-        {
-          question: currentQuestion,
-          answer: answer,
-        },
-      ];
-
-     const userId = localStorage.getItem("user_id");
-
-      const response = await API.post("/voice/final-analysis",
-        {
-          user_id: userId,
-          conversation:finalConversation,
-        }
-      );
-
-      const parsed =
-        JSON.parse(
-          response.data.analysis
-        );
-
-      setAnalysis(parsed);
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-[#FDFBD4] flex justify-center py-10 px-4">
 
