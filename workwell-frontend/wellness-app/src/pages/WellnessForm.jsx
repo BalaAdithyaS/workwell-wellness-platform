@@ -1,7 +1,7 @@
 import { useState } from "react";
 import API from "../services/api";
 import { useNavigate } from "react-router-dom";
-
+import { toast } from "react-toastify";
 function WellnessForm() {
   const moods = [
     { emoji: "😄", label: "Happy", score: 9 },
@@ -19,89 +19,97 @@ function WellnessForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [aiResult, setAiResult] = useState(null);
   const navigate = useNavigate();
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    if (!selectedMood) {
-      alert("Please select a mood");
+  if (isSubmitting) return;
+
+  if (!selectedMood) {
+    toast.warning("Please select a mood");
+    return;
+  }
+
+  setIsSubmitting(true);
+
+  try {
+    const moodData = moods.find(
+      (m) => m.label === selectedMood
+    );
+
+    const userId = localStorage.getItem("user_id");
+
+    if (!userId) {
+      toast.error("User ID not found. Please login again.");
       return;
     }
 
+    const payload = {
+      user_id: userId,
+      mood_score: moodData.score,
+      stress_level: stressLevel,
+      burnout_risk:
+        stressLevel >= 5
+          ? 4
+          : stressLevel >= 3
+          ? 2
+          : 1,
+      notes,
+    };
+
+    console.log("Submitting:", payload);
+
+    // Submit ONLY ONCE
+    const response = await API.post(
+      "/wellness/submit",
+      payload
+    );
+
+    console.log(response.data);
+
+    // Optional AI analysis
     try {
-      setIsSubmitting(true);
-
-      const moodData = moods.find(
-        (m) => m.label === selectedMood
+      const aiResponse = await API.post(
+        "/ai/analyze",
+        {
+          text: notes || selectedMood,
+        }
       );
 
-      const userId = localStorage.getItem("user_id");
+      setAiResult(aiResponse.data);
 
-      if (!userId) {
-        alert("User ID not found. Please login again.");
-        return;
-      }
-
-      const payload = {
-        user_id: userId,
-        mood_score: moodData.score,
-        stress_level: stressLevel,
-        burnout_risk:
-          stressLevel >= 5
-            ? 4
-            : stressLevel >= 3
-            ? 2
-            : 1,
-        notes,
-      };
-
-      console.log("Submitting:", payload);
-
-      const response = await API.post(
-        "/wellness/submit",
-        payload
-      );
-      await API.post("/wellness/submit", payload);
-
-alert("Wellness Report Submitted Successfully");
-
-setTimeout(() => {
-  navigate("/dashboard");
-}, 1000);
-      try {
-  const aiResponse = await API.post(
-    "/ai/analyze",
-    {
-      text: notes || selectedMood,
+    } catch (err) {
+      console.log("AI Analysis Failed", err);
     }
-  );
 
-  setAiResult(aiResponse.data);
+    // Reset form
+    setSelectedMood("");
+    setStressLevel(3);
+    setSleepHours("");
+    setEnergyLevel("Moderate");
+    setNotes("");
 
-} catch (err) {
-  console.log("AI Analysis Failed", err);
-}
+    toast.success("Wellness Report Submitted Successfully");
 
-      console.log(response.data);
+    setTimeout(() => {
+      navigate("/dashboard");
+    }, 1000);
 
-      alert("Wellness entry submitted successfully!");
+  } catch (error) {
 
-      setSelectedMood("");
-      setStressLevel(3);
-      setSleepHours("");
-      setEnergyLevel("Moderate");
-      setNotes("");
+    console.error(error);
 
-    } catch (error) {
-      console.error(error);
+    toast.error(
+      error.response?.data?.detail ||
+      "Failed to submit wellness report."
+    );
 
-      alert(
-        error.response?.data?.detail ||
-        "Submission failed"
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  } finally {
+
+    setIsSubmitting(false);
+
+  }
+};
+
 console.log("AI RESULT:", aiResult);
   return (
     <div className="min-h-screen bg-[#FDFBD4] p-6 flex items-center justify-center">
