@@ -149,6 +149,45 @@ const nextQuestion = async () => {
   }
 
 };
+const finishConversation = async () => {
+
+  if (!answer) {
+    alert("Please answer first");
+    return;
+  }
+
+  const finalConversation = [
+    ...conversation,
+    {
+      question: currentQuestion,
+      answer: answer,
+    },
+  ];
+
+  setConversation(finalConversation);
+
+  try {
+
+    const userId = localStorage.getItem("user_id");
+
+    const response = await API.post(
+      "/voice/final-analysis",
+      {
+        user_id: userId,
+        conversation: finalConversation,
+      }
+    );
+
+    const parsed = JSON.parse(response.data.analysis);
+
+    setAnalysis(parsed);
+
+  } catch (error) {
+
+    console.error("Final Analysis Error:", error);
+
+  }
+};
   return (
     <div className="min-h-screen bg-[#FDFBD4] flex justify-center py-10 px-4">
 
