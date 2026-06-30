@@ -11,7 +11,6 @@ function Signup() {
     email: "",
     password: "",
     role: "employee",
-    team_id: "",
   });
 
   const [isLoading, setIsLoading] = useState(false);
@@ -128,21 +127,6 @@ function Signup() {
             Manager
           </option>
         </select>
-
-        {/* Team ID */}
-        <label className="block mb-2 text-[#713600] font-medium">
-          Team ID
-        </label>
-
-        <input
-          type="text"
-          name="team_id"
-          placeholder="Enter Team ID (Example: TEAM001)"
-          value={formData.team_id}
-          onChange={handleChange}
-          className="w-full p-4 mb-6 border border-[#713600]/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C05800]"
-          required
-        />
 
         {/* Signup Button */}
         <button
