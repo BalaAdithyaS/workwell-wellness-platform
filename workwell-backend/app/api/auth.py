@@ -73,15 +73,25 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
             detail="Invalid password"
         )
 
+    # Fixed manager account
+    MANAGER_EMAIL = "manager@workwell.com"
+
+    role = (
+        "manager"
+        if db_user.email == MANAGER_EMAIL
+        else "employee"
+    )
+
     token = create_access_token(
         data={
             "sub": db_user.email
         }
     )
+
     return {
         "access_token": token,
         "token_type": "bearer",
-        "role": db_user.role,
+        "role": role,
         "user_id": str(db_user.id),
         "name": db_user.name
     }
