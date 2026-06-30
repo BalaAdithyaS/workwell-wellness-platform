@@ -25,17 +25,7 @@ class User(Base):
 
     password_hash = Column(String)
 
-    team_id = Column(
-        String,
-        nullable=True
-    )
-
-    role = Column(
-        String,
-        nullable=False,
-        default="employee"
-    )
-
+   
     created_at = Column(
         DateTime,
         default=datetime.utcnow

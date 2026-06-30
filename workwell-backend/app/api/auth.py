@@ -15,7 +15,7 @@ from app.database.db import SessionLocal
 from app.models.user import User
 from app.schemas.user_schema import UserCreate
 from app.auth.hashing import hash_password
-
+from sqlalchemy import text
 router = APIRouter()
 
 # Database dependency
@@ -29,40 +29,12 @@ def get_db():
 @router.post("/signup")
 def signup(user: UserCreate, db: Session = Depends(get_db)):
     try:
-
-        # Check if email already exists
-        existing_user = db.query(User).filter(
-            User.email == user.email
-        ).first()
-
-        if existing_user:
-            raise HTTPException(
-                status_code=400,
-                detail="Email already registered."
-            )
-
-        # Only one manager per team
-        if user.role == "manager":
-
-            existing_manager = db.query(User).filter(
-                User.team_id == user.team_id,
-                User.role == "manager"
-            ).first()
-
-            if existing_manager:
-                raise HTTPException(
-                    status_code=400,
-                    detail="A manager already exists for this team."
-                )
-
         hashed_pw = hash_password(user.password)
 
         new_user = User(
             name=user.name,
             email=user.email,
-            password_hash=hashed_pw,
-            role=user.role,
-            team_id=user.team_id
+            password_hash=hashed_pw
         )
 
         db.add(new_user)
@@ -71,24 +43,14 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
 
         return {
             "message": "User created successfully",
-            "user_id": str(new_user.id),
-            "role": new_user.role,
-            "team_id": new_user.team_id
+            "user_id": str(new_user.id)
         }
-
-    except HTTPException:
-        db.rollback()
-        raise
 
     except Exception as e:
         db.rollback()
         import traceback
         traceback.print_exc()
-
-        raise HTTPException(
-            status_code=500,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=500, detail=str(e))
 @router.post("/login")
 def login(user: UserLogin, db: Session = Depends(get_db)):
 
