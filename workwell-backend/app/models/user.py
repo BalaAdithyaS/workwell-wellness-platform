@@ -24,12 +24,16 @@ class User(Base):
 
     password_hash = Column(String)
 
-    company_id = Column(String, nullable=True)
+    team_id = Column(
+    String,
+    nullable=False
+)
 
-    role = Column(
-         String,
-        default="employee"
-    )
+role = Column(
+    String,
+    nullable=False,
+    default="employee"
+)
 
     created_at = Column(
         DateTime,
