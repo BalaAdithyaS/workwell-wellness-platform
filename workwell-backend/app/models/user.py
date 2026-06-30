@@ -5,6 +5,7 @@ import uuid
 
 from app.database.db import Base
 
+
 class User(Base):
 
     __tablename__ = "users"
@@ -25,15 +26,15 @@ class User(Base):
     password_hash = Column(String)
 
     team_id = Column(
-    String,
-    nullable=False
-)
+        String,
+        nullable=True
+    )
 
-role = Column(
-    String,
-    nullable=False,
-    default="employee"
-)
+    role = Column(
+        String,
+        nullable=False,
+        default="employee"
+    )
 
     created_at = Column(
         DateTime,
