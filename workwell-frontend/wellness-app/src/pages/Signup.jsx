@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import API from "../services/api";
 
 function Signup() {
@@ -9,6 +10,8 @@ function Signup() {
     name: "",
     email: "",
     password: "",
+    role: "employee",
+    team_id: "",
   });
 
   const [isLoading, setIsLoading] = useState(false);
@@ -23,31 +26,31 @@ function Signup() {
   const handleSignup = async (e) => {
     e.preventDefault();
 
+    if (isLoading) return;
+
     try {
       setIsLoading(true);
 
-const response = await API.post(
-  "/auth/signup",
-  formData
-);
+      const response = await API.post(
+        "/auth/signup",
+        formData
+      );
 
-alert(JSON.stringify(response.data));
-console.log(response.data);
-
-      // Store user_id from backend response
       localStorage.setItem(
         "user_id",
         response.data.user_id
       );
 
-      alert("Signup Successful");
+      toast.success("Account created successfully!");
 
-      navigate("/");
+      setTimeout(() => {
+        navigate("/");
+      }, 1000);
 
     } catch (error) {
       console.error(error);
 
-      alert(
+      toast.error(
         error.response?.data?.detail ||
         "Signup Failed"
       );
@@ -73,6 +76,7 @@ console.log(response.data);
           Join WorkWell and start tracking wellness.
         </p>
 
+        {/* Name */}
         <input
           type="text"
           name="name"
@@ -83,6 +87,7 @@ console.log(response.data);
           required
         />
 
+        {/* Email */}
         <input
           type="email"
           name="email"
@@ -93,22 +98,65 @@ console.log(response.data);
           required
         />
 
+        {/* Password */}
         <input
           type="password"
           name="password"
           placeholder="Password"
           value={formData.password}
           onChange={handleChange}
+          className="w-full p-4 mb-4 border border-[#713600]/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C05800]"
+          required
+        />
+
+        {/* Role */}
+        <label className="block mb-2 text-[#713600] font-medium">
+          Role
+        </label>
+
+        <select
+          name="role"
+          value={formData.role}
+          onChange={handleChange}
+          className="w-full p-4 mb-4 border border-[#713600]/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C05800]"
+        >
+          <option value="employee">
+            Employee
+          </option>
+
+          <option value="manager">
+            Manager
+          </option>
+        </select>
+
+        {/* Team ID */}
+        <label className="block mb-2 text-[#713600] font-medium">
+          Team ID
+        </label>
+
+        <input
+          type="text"
+          name="team_id"
+          placeholder="Enter Team ID (Example: TEAM001)"
+          value={formData.team_id}
+          onChange={handleChange}
           className="w-full p-4 mb-6 border border-[#713600]/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C05800]"
           required
         />
 
+        {/* Signup Button */}
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full bg-[#C05800] hover:bg-[#713600] text-white p-4 rounded-xl font-semibold transition-all"
+          className={`w-full p-4 rounded-xl font-semibold text-white transition-all duration-300 ${
+            isLoading
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-[#C05800] hover:bg-[#713600]"
+          }`}
         >
-          {isLoading ? "Creating Account..." : "Signup"}
+          {isLoading
+            ? "Creating Account..."
+            : "Create Account"}
         </button>
 
       </form>

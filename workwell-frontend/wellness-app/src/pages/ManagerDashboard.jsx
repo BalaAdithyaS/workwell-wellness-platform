@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import API from "../services/api";
+import { useNavigate } from "react-router-dom";
+
 import {
   ResponsiveContainer,
   LineChart,
@@ -13,11 +15,28 @@ function ManagerDashboard() {
     const [data, setData] = useState(null);
     const [highRiskEmployees, setHighRiskEmployees] = useState([]); 
     const [trendData, setTrendData] = useState([]);
-useEffect(() => {
-  fetchManagerData();
-  fetchHighRiskEmployees();
-  fetchTeamTrends();
-}, []);
+    const navigate = useNavigate();
+    const [search,setSearch]=useState("");
+useEffect(()=>{
+
+   if(localStorage.getItem("role")!=="manager"){
+      navigate("/dashboard");
+      return;
+   }
+
+   fetchManagerData();
+   fetchHighRiskEmployees();
+   fetchTeamTrends();
+
+   const interval=setInterval(()=>{
+      fetchManagerData();
+      fetchHighRiskEmployees();
+      fetchTeamTrends();
+   },30000);
+
+   return ()=>clearInterval(interval);
+
+},[]);
 
   const fetchManagerData = async () => {
     try {
@@ -78,99 +97,178 @@ const fetchTeamTrends = async () => {
     <div className="min-h-screen bg-[#FDFBD4] p-8">
 
       {/* Header */}
-      <div className="mb-10">
+      <div className="flex justify-between items-center mb-10">
 
-        <h1 className="text-5xl font-bold text-[#38240D]">
-          Manager Dashboard
-        </h1>
+  <div>
 
-        <p className="text-[#713600] mt-2">
-          Workforce wellness overview and risk monitoring.
-        </p>
+    <h1 className="text-5xl font-bold text-[#38240D]">
+      Manager Dashboard
+    </h1>
 
-      </div>
+    <p className="text-[#713600] mt-2">
+      Workforce wellness overview.
+    </p>
+
+  </div>
+
+  <button
+    onClick={()=>{
+      localStorage.clear();
+      navigate("/");
+    }}
+    className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl"
+  >
+    Logout
+  </button>
+
+</div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
 
-        <div className="bg-white rounded-3xl p-6 shadow-lg">
-          <p className="text-sm uppercase tracking-wide text-[#713600]">
-            Total Employees
-          </p>
+  {/* Total Employees */}
+  <div className="bg-white rounded-3xl p-6 shadow-lg hover:shadow-xl transition duration-300">
 
-          <h2 className="text-5xl font-bold text-[#38240D] mt-3">
-            {data.total_employees}
-          </h2>
-        </div>
+    <p className="text-sm uppercase tracking-wide text-[#713600]">
+      Total Employees
+    </p>
 
-        <div className="bg-white rounded-3xl p-6 shadow-lg">
-          <p className="text-sm uppercase tracking-wide text-[#713600]">
-            Average Mood
-          </p>
+    <h2 className="text-5xl font-bold text-[#38240D] mt-3">
+      {data.total_employees}
+    </h2>
 
-          <h2 className="text-5xl font-bold text-[#38240D] mt-3">
-            {data.average_mood}
-          </h2>
-        </div>
+    <p className="text-sm text-gray-500 mt-3">
+      Active workforce
+    </p>
 
-        <div className="bg-white rounded-3xl p-6 shadow-lg">
-          <p className="text-sm uppercase tracking-wide text-[#713600]">
-            Average Stress
-          </p>
+  </div>
 
-          <h2 className="text-5xl font-bold text-[#38240D] mt-3">
-            {data.average_stress}
-          </h2>
-        </div>
+  {/* Average Mood */}
+  <div className="bg-white rounded-3xl p-6 shadow-lg hover:shadow-xl transition duration-300">
 
-        <div className="bg-white rounded-3xl p-6 shadow-lg">
-          <p className="text-sm uppercase tracking-wide text-[#713600]">
-            High Burnout Cases
-          </p>
+    <p className="text-sm uppercase tracking-wide text-[#713600]">
+      Average Mood
+    </p>
 
-          <h2 className="text-5xl font-bold text-red-600 mt-3">
-            {data.high_burnout}
-          </h2>
-        </div>
+    <h2 className="text-5xl font-bold text-green-600 mt-3">
+      {data.average_mood}
+    </h2>
 
-      </div>
+    <p className="text-sm text-gray-500 mt-3">
+      Overall team morale
+    </p>
 
-      {/* AI Insight */}
-      <div className="bg-white rounded-3xl shadow-lg p-8 mb-8 border-l-[10px] border-[#C05800]">
+  </div>
 
-        <h2 className="text-2xl font-bold text-[#38240D] mb-6">
-          AI Workforce Insight
-        </h2>
+  {/* Average Stress */}
+  <div className="bg-white rounded-3xl p-6 shadow-lg hover:shadow-xl transition duration-300">
 
-        <div className="space-y-4 text-[#713600]">
+    <p className="text-sm uppercase tracking-wide text-[#713600]">
+      Average Stress
+    </p>
 
-          <p>
-            {data.average_mood >= 7
-              ? "Employee engagement and morale remain healthy across recent wellness submissions."
-              : "Employee morale indicates potential wellness concerns requiring attention."}
-          </p>
+    <h2 className="text-5xl font-bold text-yellow-600 mt-3">
+      {data.average_stress}
+    </h2>
 
-          <p>
-            {data.average_stress >= 4
-              ? "Stress indicators are above the recommended threshold and should be monitored closely."
-              : "Stress indicators remain within an acceptable range."}
-          </p>
+    <p className="text-sm text-gray-500 mt-3">
+      Current stress level
+    </p>
 
-          <div className="bg-[#FDFBD4] rounded-2xl p-5 text-[#38240D]">
+  </div>
 
-            <span className="font-semibold">
-              Recommendation:
-            </span>
+  {/* Burnout */}
+  <div className="bg-white rounded-3xl p-6 shadow-lg hover:shadow-xl transition duration-300">
 
-            {data.high_burnout > 0
-              ? " Conduct manager check-ins, review workload allocation, and encourage recovery time for affected employees."
-              : " Continue current wellness initiatives and maintain periodic employee wellness assessments."}
+    <p className="text-sm uppercase tracking-wide text-[#713600]">
+      High Burnout Cases
+    </p>
 
-          </div>
+    <h2 className="text-5xl font-bold text-red-600 mt-3">
+      {data.high_burnout}
+    </h2>
 
-        </div>
+    <p className="text-sm text-gray-500 mt-3">
+      Employees requiring attention
+    </p>
 
-      </div>
+  </div>
+
+</div>
+
+      {/* AI Workforce Insight */}
+
+<div className="bg-white rounded-3xl shadow-lg p-8 mb-8 border-l-[8px] border-[#C05800]">
+
+  <h2 className="text-2xl font-bold text-[#38240D] mb-6">
+    AI Workforce Insight
+  </h2>
+
+  <div className="space-y-5">
+
+    <div className="bg-[#FDFBD4] rounded-2xl p-5">
+
+      <h3 className="font-semibold text-[#38240D] mb-2">
+        Workforce Summary
+      </h3>
+
+      <p className="text-[#713600]">
+        • Average Mood Score: <strong>{data.average_mood}</strong>
+      </p>
+
+      <p className="text-[#713600]">
+        • Average Stress Level: <strong>{data.average_stress}</strong>
+      </p>
+
+      <p className="text-[#713600]">
+        • High Burnout Employees: <strong>{data.high_burnout}</strong>
+      </p>
+
+    </div>
+
+    <div className="bg-blue-50 rounded-2xl p-5">
+
+      <h3 className="font-semibold text-blue-800 mb-2">
+        AI Observation
+      </h3>
+
+      <p className="text-gray-700">
+
+        {data.average_mood >= 7
+          ? "Employee morale is healthy and the workforce appears engaged."
+          : "Overall morale has decreased and requires manager attention."}
+
+      </p>
+
+      <p className="text-gray-700 mt-2">
+
+        {data.average_stress >= 4
+          ? "Stress levels are above the recommended threshold. Monitoring and workload balancing are advised."
+          : "Stress levels remain within an acceptable range."}
+
+      </p>
+
+    </div>
+
+    <div className="bg-green-50 rounded-2xl p-5">
+
+      <h3 className="font-semibold text-green-800 mb-2">
+        Recommendation
+      </h3>
+
+      <p className="text-gray-700">
+
+        {data.high_burnout > 0
+          ? "Schedule one-on-one meetings with high-risk employees, redistribute workloads where necessary, and encourage wellness breaks."
+          : "Continue regular wellness assessments and maintain current employee engagement initiatives."}
+
+      </p>
+
+    </div>
+
+  </div>
+
+</div>
 
       {/* Risk Alert */}
       {data.high_burnout > 0 && (
@@ -244,45 +342,71 @@ const fetchTeamTrends = async () => {
     Team Wellness Trends
   </h2>
 
-  <ResponsiveContainer
-    width="100%"
-    height={350}
-  >
+ <ResponsiveContainer
+  width="100%"
+  height={420}
+>
+    <LineChart
+  data={trendData}
+  margin={{
+    top: 20,
+    right: 30,
+    left: 10,
+    bottom: 10,
+  }}
+>
 
-    <LineChart data={trendData}>
+      <XAxis
+  dataKey="date"
+  tick={{ fontSize: 12 }}
+/>
 
-      <XAxis dataKey="date" />
+      <YAxis
+  tick={{ fontSize: 12 }}
+/>
 
-      <YAxis />
+      <Tooltip
+  contentStyle={{
+    borderRadius: "12px",
+    border: "none",
+    boxShadow: "0 5px 15px rgba(0,0,0,0.15)"
+  }}
+/>
 
-      <Tooltip />
-
-      <Legend />
+      <Legend
+  verticalAlign="top"
+  height={40}
+/>
 
       <Line
-        type="monotone"
-        dataKey="mood"
-        stroke="#16a34a"
-        strokeWidth={3}
-        name="Mood"
-      />
+  type="monotone"
+  dataKey="mood"
+  stroke="#16a34a"
+  strokeWidth={3}
+  dot={{ r: 4 }}
+  activeDot={{ r: 7 }}
+  name="Mood"
+/>
 
       <Line
-        type="monotone"
-        dataKey="stress"
-        stroke="#f59e0b"
-        strokeWidth={3}
-        name="Stress"
-      />
+  type="monotone"
+  dataKey="stress"
+  stroke="#f59e0b"
+  strokeWidth={3}
+  dot={{ r: 4 }}
+  activeDot={{ r: 7 }}
+  name="Stress"
+/>
 
       <Line
-        type="monotone"
-        dataKey="burnout"
-        stroke="#dc2626"
-        strokeWidth={3}
-        name="Burnout"
-      />
-
+  type="monotone"
+  dataKey="burnout"
+  stroke="#dc2626"
+  strokeWidth={3}
+  dot={{ r: 4 }}
+  activeDot={{ r: 7 }}
+  name="Burnout"
+/>
     </LineChart>
 
   </ResponsiveContainer>
@@ -293,6 +417,13 @@ const fetchTeamTrends = async () => {
   <h2 className="text-2xl font-bold text-[#38240D] mb-6">
     Employees Requiring Attention
   </h2>
+  <input
+  type="text"
+  placeholder="Search employee..."
+  value={search}
+  onChange={(e) => setSearch(e.target.value)}
+  className="w-full p-3 mb-6 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#C05800]"
+/>
 
   {highRiskEmployees.length === 0 ? (
 
@@ -327,14 +458,22 @@ const fetchTeamTrends = async () => {
           <th className="text-left py-4">
             Sentiment
           </th>
-
+          <th className="text-left py-4">
+            status
+</th>
         </tr>
 
       </thead>
 
       <tbody>
 
-        {highRiskEmployees.map(
+        {highRiskEmployees
+  .filter((employee) =>
+    employee.name
+      .toLowerCase()
+      .includes(search.toLowerCase())
+  )
+  .map(
           (employee, index) => (
 
             <tr
@@ -360,13 +499,42 @@ const fetchTeamTrends = async () => {
 
               <td className="py-4">
 
-                <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full">
-
-                  {employee.sentiment}
-
-                </span>
+               <span
+  className={`px-3 py-1 rounded-full font-medium ${
+    employee.sentiment === "Positive"
+      ? "bg-green-100 text-green-700"
+      : employee.sentiment === "Neutral"
+      ? "bg-yellow-100 text-yellow-700"
+      : "bg-red-100 text-red-700"
+  }`}
+>
+  {employee.sentiment}
+</span>
 
               </td>
+              <td className="py-4">
+
+  {employee.burnout_risk >= 5 ? (
+
+    <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full font-medium">
+      Critical
+    </span>
+
+  ) : employee.burnout_risk >= 3 ? (
+
+    <span className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full font-medium">
+      Monitor
+    </span>
+
+  ) : (
+
+    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full font-medium">
+      Healthy
+    </span>
+
+  )}
+
+</td>
 
             </tr>
 
