@@ -6,6 +6,7 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
     team_id: str
+    role: str = "employee"
 
 
 class UserLogin(BaseModel):

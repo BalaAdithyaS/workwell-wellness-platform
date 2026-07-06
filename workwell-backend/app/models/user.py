@@ -28,6 +28,11 @@ class User(Base):
     String,
     nullable=True
     )
+    role = Column(
+    String,
+    nullable=False,
+    default="employee"
+)
    
     created_at = Column(
         DateTime,

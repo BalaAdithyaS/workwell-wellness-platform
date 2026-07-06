@@ -56,6 +56,21 @@ def migrate_team_id():
     return {
         "message": "team_id migration completed"
     }
+
+@app.get("/migrate-role")
+def migrate_role():
+
+    with engine.begin() as connection:
+        connection.execute(text("""
+            ALTER TABLE users
+            ADD COLUMN IF NOT EXISTS role VARCHAR(20)
+            NOT NULL DEFAULT 'employee';
+        """))
+
+    return {
+        "message": "role migration completed"
+    }
+
 # API Routes
 app.include_router(
     auth_router,

@@ -16,6 +16,7 @@ router = APIRouter()
 # Database dependency
 def get_db():
     db = SessionLocal()
+
     try:
         yield db
     finally:
@@ -24,12 +25,16 @@ def get_db():
 
 # Signup
 @router.post("/signup")
-def signup(user: UserCreate, db: Session = Depends(get_db)):
-
+def signup(
+    user: UserCreate,
+    db: Session = Depends(get_db)
+):
     try:
         # Check if email already exists
         existing_user = db.execute(
-            select(User).where(User.email == user.email)
+            select(User).where(
+                User.email == user.email
+            )
         ).scalar_one_or_none()
 
         if existing_user:
@@ -38,13 +43,36 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
                 detail="Email already registered"
             )
 
+        # Validate role
+        if user.role not in ["employee", "manager"]:
+            raise HTTPException(
+                status_code=400,
+                detail="Role must be employee or manager"
+            )
+
+        # Check whether the team already has a manager
+        if user.role == "manager":
+            existing_manager = db.execute(
+                select(User).where(
+                    User.team_id == user.team_id,
+                    User.role == "manager"
+                )
+            ).scalar_one_or_none()
+
+            if existing_manager:
+                raise HTTPException(
+                    status_code=400,
+                    detail="This team already has a manager"
+                )
+
         hashed_pw = hash_password(user.password)
 
         new_user = User(
             name=user.name,
             email=user.email,
             password_hash=hashed_pw,
-            team_id=user.team_id
+            team_id=user.team_id,
+            role=user.role
         )
 
         db.add(new_user)
@@ -54,6 +82,7 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
         return {
             "message": "User created successfully",
             "user_id": str(new_user.id),
+            "role": new_user.role,
             "team_id": new_user.team_id
         }
 
@@ -75,10 +104,14 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
 
 # Login
 @router.post("/login")
-def login(user: UserLogin, db: Session = Depends(get_db)):
-
+def login(
+    user: UserLogin,
+    db: Session = Depends(get_db)
+):
     db_user = db.execute(
-        select(User).where(User.email == user.email)
+        select(User).where(
+            User.email == user.email
+        )
     ).scalar_one_or_none()
 
     if not db_user:
@@ -96,19 +129,6 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
             detail="Invalid password"
         )
 
-    # Fixed manager account
-    if db_user.email == "manager@workwell.com":
-        role = "manager"
-
-        # Assign the manager to TEAM-001
-        if db_user.team_id != "TEAM-001":
-            db_user.team_id = "TEAM-001"
-            db.commit()
-            db.refresh(db_user)
-
-    else:
-        role = "employee"
-
     token = create_access_token(
         data={
             "sub": db_user.email
@@ -118,7 +138,7 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
     return {
         "access_token": token,
         "token_type": "bearer",
-        "role": role,
+        "role": db_user.role,
         "user_id": str(db_user.id),
         "name": db_user.name,
         "team_id": db_user.team_id
@@ -127,8 +147,9 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
 
 # Protected route
 @router.get("/me")
-def get_current_user(payload=Depends(verify_token)):
-
+def get_current_user(
+    payload=Depends(verify_token)
+):
     return {
         "message": "Protected route accessed",
         "user": payload
