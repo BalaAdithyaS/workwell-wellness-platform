@@ -41,6 +41,21 @@ def home():
         "message": "WorkWell Backend Running"
     }
 
+from sqlalchemy import text
+
+@app.get("/migrate-team-id")
+def migrate_team_id():
+
+    with engine.begin() as connection:
+
+        connection.execute(text("""
+            ALTER TABLE users
+            ADD COLUMN IF NOT EXISTS team_id VARCHAR(50);
+        """))
+
+    return {
+        "message": "team_id migration completed"
+    }
 # API Routes
 app.include_router(
     auth_router,
