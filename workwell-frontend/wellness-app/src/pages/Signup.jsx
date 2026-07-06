@@ -6,12 +6,12 @@ import API from "../services/api";
 function Signup() {
   const navigate = useNavigate();
 
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-    role: "employee",
-  });
+const [formData, setFormData] = useState({
+  name: "",
+  email: "",
+  password: "",
+  team_id: "",
+});
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -107,7 +107,15 @@ function Signup() {
           className="w-full p-4 mb-4 border border-[#713600]/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C05800]"
           required
         />
-
+        <input
+          type="text"
+          name="team_id"
+          placeholder="Team ID (Example: TEAM-001)"
+          value={formData.team_id}
+          onChange={handleChange}
+          className="w-full p-4 mb-6 border border-[#713600]/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C05800]"
+          required
+        />
         {/* Role */}
         <label className="block mb-2 text-[#713600] font-medium">
           Role

@@ -24,7 +24,10 @@ class User(Base):
     )
 
     password_hash = Column(String)
-
+    team_id = Column(
+    String,
+    nullable=True
+    )
    
     created_at = Column(
         DateTime,
