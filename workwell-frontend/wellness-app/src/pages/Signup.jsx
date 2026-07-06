@@ -11,6 +11,7 @@ const [formData, setFormData] = useState({
   email: "",
   password: "",
   team_id: "",
+  role: "",
 });
 
   const [isLoading, setIsLoading] = useState(false);
