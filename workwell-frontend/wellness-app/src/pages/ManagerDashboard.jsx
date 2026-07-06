@@ -40,9 +40,16 @@ useEffect(()=>{
 
   const fetchManagerData = async () => {
     try {
+      const teamId = localStorage.getItem("team_id");
+
       const response = await API.get(
-        "/analytics/manager-summary"
-      );
+          "/analytics/manager-summary",
+      {
+        params: {
+        team_id: teamId,
+        },
+  }
+);
 
       setData(response.data);
 
@@ -50,36 +57,42 @@ useEffect(()=>{
       console.error(error);
     }
   };
-  const fetchHighRiskEmployees = async () => {
+const fetchHighRiskEmployees = async () => {
   try {
+    const teamId = localStorage.getItem("team_id");
 
     const response = await API.get(
-      "/analytics/high-risk-employees"
+      "/analytics/high-risk-employees",
+      {
+        params: {
+          team_id: teamId,
+        },
+      }
     );
 
-    setHighRiskEmployees(
-      response.data
-    );
+    setHighRiskEmployees(response.data);
 
   } catch (error) {
-
     console.error(error);
-
   }
 };
 const fetchTeamTrends = async () => {
   try {
+    const teamId = localStorage.getItem("team_id");
 
     const response = await API.get(
-      "/analytics/team-trends"
+      "/analytics/team-trends",
+      {
+        params: {
+          team_id: teamId,
+        },
+      }
     );
 
     setTrendData(response.data);
 
   } catch (error) {
-
     console.error(error);
-
   }
 };
 
@@ -590,7 +603,7 @@ const fetchTeamTrends = async () => {
 
   </table>
 
-</div>
+</div>  
   )}
 
 </div>

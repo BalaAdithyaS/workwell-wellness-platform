@@ -33,6 +33,8 @@ function Login() {
         response.data.role
       );
 
+      localStorage.setItem("team_id", response.data.team_id);
+
       localStorage.setItem(
         "user_id",
         response.data.user_id

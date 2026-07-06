@@ -14,7 +14,69 @@ def get_db():
         yield db
     finally:
         db.close()
+@router.get("/all-employees")
+def get_all_employees(db: Session = Depends(get_db)):
 
+    employees = (
+        db.query(
+            User.name,
+            User.email,
+            WellnessEntry.mood_score,
+            WellnessEntry.stress_level,
+            WellnessEntry.burnout_risk,
+            WellnessEntry.sentiment
+        )
+        .join(
+            WellnessEntry,
+            User.id == WellnessEntry.user_id
+        )
+        .order_by(WellnessEntry.created_at.desc())
+        .all()
+    )
+
+    result = []
+
+    for e in employees:
+        result.append({
+            "name": e.name,
+            "email": e.email,
+            "mood": e.mood_score,
+            "stress": e.stress_level,
+            "burnout": e.burnout_risk,
+            "sentiment": e.sentiment
+        })
+
+    return result
+@router.get("/recent-submissions")
+def recent_submissions(db: Session = Depends(get_db)):
+
+    entries = (
+        db.query(
+            User.name,
+            WellnessEntry.created_at,
+            WellnessEntry.mood_score,
+            WellnessEntry.stress_level
+        )
+        .join(
+            User,
+            WellnessEntry.user_id == User.id
+        )
+        .order_by(WellnessEntry.created_at.desc())
+        .limit(10)
+        .all()
+    )
+
+    result = []
+
+    for e in entries:
+        result.append({
+            "name": e.name,
+            "date": e.created_at.strftime("%d/%m/%Y"),
+            "mood": e.mood_score,
+            "stress": e.stress_level
+        })
+
+    return result
 @router.get("/summary/{user_id}")
 def get_summary(
     user_id: str,
@@ -69,52 +131,74 @@ def get_ai_insight(
     }
 @router.get("/manager-summary")
 def get_manager_summary(
+    team_id: str,
     db: Session = Depends(get_db)
 ):
 
-    total_employees = db.query(
-        func.count(func.distinct(WellnessEntry.user_id))
-    ).scalar()
+    team_entries = (
+        db.query(WellnessEntry)
+        .join(
+            User,
+            WellnessEntry.user_id == User.id
+        )
+        .filter(
+            User.team_id == team_id
+        )
+    )
 
-    average_mood = db.query(
+    total_employees = (
+        db.query(
+            func.count(func.distinct(User.id))
+        )
+        .filter(
+            User.team_id == team_id
+        )
+        .scalar()
+    )
+
+    average_mood = team_entries.with_entities(
         func.avg(WellnessEntry.mood_score)
     ).scalar()
 
-    average_stress = db.query(
+    average_stress = team_entries.with_entities(
         func.avg(WellnessEntry.stress_level)
     ).scalar()
 
-    high_burnout = db.query(
-        WellnessEntry
-    ).filter(
+    high_burnout = team_entries.filter(
         WellnessEntry.burnout_risk >= 4
     ).count()
 
     return {
-        "total_employees": total_employees,
+        "total_employees": total_employees or 0,
         "average_mood": round(average_mood or 0, 1),
         "average_stress": round(average_stress or 0, 1),
         "high_burnout": high_burnout
     }
+
 @router.get("/high-risk-employees")
 def get_high_risk_employees(
+    team_id: str,
     db: Session = Depends(get_db)
 ):
-
-    employees = db.query(
-        WellnessEntry,
-        User.name
-    ).join(
-        User,
-        WellnessEntry.user_id == User.id
-    ).filter(
-        WellnessEntry.burnout_risk >= 4
-    ).all()
+    employees = (
+        db.query(
+            WellnessEntry,
+            User.name
+        )
+        .join(
+            User,
+            WellnessEntry.user_id == User.id
+        )
+        .filter(
+            User.team_id == team_id,
+            WellnessEntry.burnout_risk >= 4
+        )
+        .all()
+    )
 
     result = []
 
     for wellness, name in employees:
-
         result.append({
             "name": name,
             "mood_score": wellness.mood_score,
@@ -126,19 +210,28 @@ def get_high_risk_employees(
     return result
 @router.get("/team-trends")
 def get_team_trends(
+    team_id: str,
     db: Session = Depends(get_db)
 ):
 
-    entries = db.query(
-        WellnessEntry
-    ).order_by(
-        WellnessEntry.created_at.asc()
-    ).all()
+    entries = (
+        db.query(WellnessEntry)
+        .join(
+            User,
+            WellnessEntry.user_id == User.id
+        )
+        .filter(
+            User.team_id == team_id
+        )
+        .order_by(
+            WellnessEntry.created_at.asc()
+        )
+        .all()
+    )
 
     result = []
 
     for entry in entries:
-
         result.append({
             "date": entry.created_at.strftime("%d/%m"),
             "mood": entry.mood_score,
