@@ -71,6 +71,22 @@ def migrate_role():
         "message": "role migration completed"
     }
 
+
+@app.delete("/dev-reset-database")
+def dev_reset_database():
+
+    with engine.begin() as connection:
+        connection.execute(text("""
+            DELETE FROM wellness_entries;
+        """))
+
+        connection.execute(text("""
+            DELETE FROM users;
+        """))
+
+    return {
+        "message": "All wellness entries and users deleted"
+    }
 # API Routes
 app.include_router(
     auth_router,
