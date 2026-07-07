@@ -1,3 +1,5 @@
+from unittest import result
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -15,35 +17,57 @@ def get_db():
     finally:
         db.close()
 @router.get("/all-employees")
-def get_all_employees(db: Session = Depends(get_db)):
-
+def get_all_employees(
+    team_id: str,
+    db: Session = Depends(get_db)
+):
     employees = (
-        db.query(
-            User.name,
-            User.email,
-            WellnessEntry.mood_score,
-            WellnessEntry.stress_level,
-            WellnessEntry.burnout_risk,
-            WellnessEntry.sentiment
+        db.query(User)
+        .filter(
+            User.team_id == team_id,
+            User.role == "employee"
         )
-        .join(
-            WellnessEntry,
-            User.id == WellnessEntry.user_id
-        )
-        .order_by(WellnessEntry.created_at.desc())
         .all()
     )
 
     result = []
 
-    for e in employees:
+    for employee in employees:
+
+        latest_entry = (
+            db.query(WellnessEntry)
+            .filter(
+                WellnessEntry.user_id == employee.id
+            )
+            .order_by(
+                WellnessEntry.created_at.desc()
+            )
+            .first()
+        )
+
         result.append({
-            "name": e.name,
-            "email": e.email,
-            "mood": e.mood_score,
-            "stress": e.stress_level,
-            "burnout": e.burnout_risk,
-            "sentiment": e.sentiment
+            "name": employee.name,
+            "email": employee.email,
+            "mood_score": (
+                latest_entry.mood_score
+                if latest_entry
+                else None
+            ),
+            "stress_level": (
+                latest_entry.stress_level
+                if latest_entry
+                else None
+            ),
+            "burnout_risk": (
+                latest_entry.burnout_risk
+                if latest_entry
+                else None
+            ),
+            "sentiment": (
+                latest_entry.sentiment
+                if latest_entry
+                else "No data"
+            )
         })
 
     return result

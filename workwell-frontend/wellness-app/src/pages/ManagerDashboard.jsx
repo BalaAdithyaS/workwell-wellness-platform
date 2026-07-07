@@ -62,7 +62,7 @@ const fetchHighRiskEmployees = async () => {
     const teamId = localStorage.getItem("team_id");
 
     const response = await API.get(
-      "/analytics/high-risk-employees",
+      "/analytics/all-employees",
       {
         params: {
           team_id: teamId,
@@ -349,261 +349,262 @@ const fetchTeamTrends = async () => {
         </div>
 
       </div>
-      <div className="bg-white rounded-3xl shadow-lg p-8 mt-8">
+{/* All Employees */}
+<div className="bg-white rounded-3xl shadow-lg p-8 mt-8">
 
   <h2 className="text-2xl font-bold text-[#38240D] mb-6">
-    Team Wellness Trends
+    Team Employees
   </h2>
 
- <ResponsiveContainer
-  width="100%"
-  height={420}
->
-    <LineChart
-  data={trendData}
-  margin={{
-    top: 20,
-    right: 30,
-    left: 10,
-    bottom: 10,
-  }}
->
-
-      <XAxis
-  dataKey="date"
-  tick={{ fontSize: 12 }}
-/>
-
-      <YAxis
-  tick={{ fontSize: 12 }}
-/>
-
-      <Tooltip
-  contentStyle={{
-    borderRadius: "12px",
-    border: "none",
-    boxShadow: "0 5px 15px rgba(0,0,0,0.15)"
-  }}
-/>
-
-      <Legend
-  verticalAlign="top"
-  height={40}
-/>
-
-      <Line
-  type="monotone"
-  dataKey="mood"
-  stroke="#16a34a"
-  strokeWidth={3}
-  dot={{ r: 4 }}
-  activeDot={{ r: 7 }}
-  name="Mood"
-/>
-
-      <Line
-  type="monotone"
-  dataKey="stress"
-  stroke="#f59e0b"
-  strokeWidth={3}
-  dot={{ r: 4 }}
-  activeDot={{ r: 7 }}
-  name="Stress"
-/>
-
-      <Line
-  type="monotone"
-  dataKey="burnout"
-  stroke="#dc2626"
-  strokeWidth={3}
-  dot={{ r: 4 }}
-  activeDot={{ r: 7 }}
-  name="Burnout"
-/>
-    </LineChart>
-
-  </ResponsiveContainer>
-
-</div>
-      <div className="bg-white rounded-3xl shadow-lg p-8 mt-8">
-
-  <h2 className="text-2xl font-bold text-[#38240D] mb-6">
-    Employees Requiring Attention
-  </h2>
   <input
-  type="text"
-  placeholder="Search employee..."
-  value={search}
-  onChange={(e) => setSearch(e.target.value)}
-  className="w-full p-3 mb-6 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#C05800]"
-/>
+    type="text"
+    placeholder="Search employee..."
+    value={search}
+    onChange={(e) => setSearch(e.target.value)}
+    className="w-full p-3 mb-6 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#C05800]"
+  />
 
   {highRiskEmployees.length === 0 ? (
 
-    <p className="text-[#713600]">
-      No high-risk employees detected.
+    <p className="text-[#713600] text-center py-8">
+      No employees found in this team.
     </p>
 
   ) : (
 
-<div className="overflow-x-auto">
+    <div className="overflow-x-auto">
 
-  <table className="w-full border-collapse">
+      <table className="w-full border-collapse">
 
-    <thead>
+        <thead>
 
-      <tr className="bg-[#FFF8D6] border-b">
+          <tr className="bg-[#FFF8D6] border-b">
 
-        <th className="text-left py-4 px-4 font-semibold text-[#38240D]">
-          Employee
-        </th>
+            <th className="text-left py-4 px-4 font-semibold text-[#38240D]">
+              Employee
+            </th>
 
-        <th className="text-left py-4 px-4 font-semibold text-[#38240D]">
-          Mood
-        </th>
+            <th className="text-left py-4 px-4 font-semibold text-[#38240D]">
+              Email
+            </th>
 
-        <th className="text-left py-4 px-4 font-semibold text-[#38240D]">
-          Stress
-        </th>
+            <th className="text-left py-4 px-4 font-semibold text-[#38240D]">
+              Mood
+            </th>
 
-        <th className="text-left py-4 px-4 font-semibold text-[#38240D]">
-          Burnout
-        </th>
+            <th className="text-left py-4 px-4 font-semibold text-[#38240D]">
+              Stress
+            </th>
 
-        <th className="text-left py-4 px-4 font-semibold text-[#38240D]">
-          Sentiment
-        </th>
+            <th className="text-left py-4 px-4 font-semibold text-[#38240D]">
+              Burnout
+            </th>
 
-        <th className="text-left py-4 px-4 font-semibold text-[#38240D]">
-          Status
-        </th>
+            <th className="text-left py-4 px-4 font-semibold text-[#38240D]">
+              Sentiment
+            </th>
 
-      </tr>
-
-    </thead>
-
-    <tbody>
-
-      {highRiskEmployees
-        .filter((employee) =>
-          employee.name
-            .toLowerCase()
-            .includes(search.toLowerCase())
-        )
-        .map((employee, index) => (
-
-          <tr
-            key={index}
-            className="border-b hover:bg-[#FFF8D6] transition duration-200"
-          >
-
-            {/* Employee */}
-            <td className="py-4 px-4 font-medium text-[#38240D]">
-              {employee.name}
-            </td>
-
-            {/* Mood */}
-            <td className="py-4 px-4">
-
-              <span
-                className={`font-bold ${
-                  employee.mood_score >= 7
-                    ? "text-green-600"
-                    : employee.mood_score >= 4
-                    ? "text-yellow-600"
-                    : "text-red-600"
-                }`}
-              >
-                {employee.mood_score}
-              </span>
-
-            </td>
-
-            {/* Stress */}
-            <td className="py-4 px-4">
-
-              <span
-                className={`font-bold ${
-                  employee.stress_level <= 2
-                    ? "text-green-600"
-                    : employee.stress_level <= 4
-                    ? "text-yellow-600"
-                    : "text-red-600"
-                }`}
-              >
-                {employee.stress_level}
-              </span>
-
-            </td>
-
-            {/* Burnout */}
-            <td className="py-4 px-4">
-
-              <span
-                className={`font-bold ${
-                  employee.burnout_risk >= 5
-                    ? "text-red-600"
-                    : employee.burnout_risk >= 3
-                    ? "text-yellow-600"
-                    : "text-green-600"
-                }`}
-              >
-                {employee.burnout_risk}
-              </span>
-
-            </td>
-
-            {/* Sentiment */}
-            <td className="py-4 px-4">
-
-              <span
-                className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  employee.sentiment === "Positive"
-                    ? "bg-green-100 text-green-700"
-                    : employee.sentiment === "Neutral"
-                    ? "bg-yellow-100 text-yellow-700"
-                    : "bg-red-100 text-red-700"
-                }`}
-              >
-                {employee.sentiment}
-              </span>
-
-            </td>
-
-            {/* Status */}
-            <td className="py-4 px-4">
-
-              {employee.burnout_risk >= 5 ? (
-
-                <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-semibold">
-                  Critical
-                </span>
-
-              ) : employee.burnout_risk >= 3 ? (
-
-                <span className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-sm font-semibold">
-                  Monitor
-                </span>
-
-              ) : (
-
-                <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-semibold">
-                  Healthy
-                </span>
-
-              )}
-
-            </td>
+            <th className="text-left py-4 px-4 font-semibold text-[#38240D]">
+              Status
+            </th>
 
           </tr>
 
-        ))}
+        </thead>
 
-    </tbody>
+        <tbody>
 
-  </table>
+          {highRiskEmployees.filter((employee) =>
+            employee.name
+              .toLowerCase()
+              .includes(search.toLowerCase())
+          ).length === 0 ? (
 
-</div>  
+            <tr>
+              <td
+                colSpan={7}
+                className="text-center py-10 text-gray-500"
+              >
+                No employees match your search.
+              </td>
+            </tr>
+
+          ) : (
+
+            highRiskEmployees
+              .filter((employee) =>
+                employee.name
+                  .toLowerCase()
+                  .includes(search.toLowerCase())
+              )
+              .map((employee, index) => (
+
+                <tr
+                  key={employee.email || index}
+                  className="border-b hover:bg-[#FFF8D6] transition duration-200"
+                >
+
+                  {/* Employee */}
+                  <td className="py-4 px-4 font-medium text-[#38240D]">
+                    {employee.name}
+                  </td>
+
+                  {/* Email */}
+                  <td className="py-4 px-4 text-gray-600">
+                    {employee.email}
+                  </td>
+
+                  {/* Mood */}
+                  <td className="py-4 px-4">
+
+                    {employee.mood_score == null ? (
+
+                      <span className="text-gray-400">
+                        —
+                      </span>
+
+                    ) : (
+
+                      <span
+                        className={`font-bold ${
+                          employee.mood_score >= 7
+                            ? "text-green-600"
+                            : employee.mood_score >= 4
+                            ? "text-yellow-600"
+                            : "text-red-600"
+                        }`}
+                      >
+                        {employee.mood_score}
+                      </span>
+
+                    )}
+
+                  </td>
+
+                  {/* Stress */}
+                  <td className="py-4 px-4">
+
+                    {employee.stress_level == null ? (
+
+                      <span className="text-gray-400">
+                        —
+                      </span>
+
+                    ) : (
+
+                      <span
+                        className={`font-bold ${
+                          employee.stress_level <= 2
+                            ? "text-green-600"
+                            : employee.stress_level <= 4
+                            ? "text-yellow-600"
+                            : "text-red-600"
+                        }`}
+                      >
+                        {employee.stress_level}
+                      </span>
+
+                    )}
+
+                  </td>
+
+                  {/* Burnout */}
+                  <td className="py-4 px-4">
+
+                    {employee.burnout_risk == null ? (
+
+                      <span className="text-gray-400">
+                        —
+                      </span>
+
+                    ) : (
+
+                      <span
+                        className={`font-bold ${
+                          employee.burnout_risk >= 5
+                            ? "text-red-600"
+                            : employee.burnout_risk >= 3
+                            ? "text-yellow-600"
+                            : "text-green-600"
+                        }`}
+                      >
+                        {employee.burnout_risk}
+                      </span>
+
+                    )}
+
+                  </td>
+
+                  {/* Sentiment */}
+                  <td className="py-4 px-4">
+
+                    {employee.sentiment === "No data" ? (
+
+                      <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-sm font-medium">
+                        No Data
+                      </span>
+
+                    ) : (
+
+                      <span
+                        className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          employee.sentiment === "Positive"
+                            ? "bg-green-100 text-green-700"
+                            : employee.sentiment === "Neutral"
+                            ? "bg-yellow-100 text-yellow-700"
+                            : "bg-red-100 text-red-700"
+                        }`}
+                      >
+                        {employee.sentiment || "Unknown"}
+                      </span>
+
+                    )}
+
+                  </td>
+
+                  {/* Status */}
+                  <td className="py-4 px-4">
+
+                    {employee.burnout_risk == null ? (
+
+                      <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-sm font-semibold">
+                        No Data
+                      </span>
+
+                    ) : employee.burnout_risk >= 5 ? (
+
+                      <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-semibold">
+                        Critical
+                      </span>
+
+                    ) : employee.burnout_risk >= 3 ? (
+
+                      <span className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-sm font-semibold">
+                        Monitor
+                      </span>
+
+                    ) : (
+
+                      <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-semibold">
+                        Healthy
+                      </span>
+
+                    )}
+
+                  </td>
+
+                </tr>
+
+              ))
+
+          )}
+
+        </tbody>
+
+      </table>
+
+    </div>
+
   )}
 
 </div>
