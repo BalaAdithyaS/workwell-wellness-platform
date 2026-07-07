@@ -123,19 +123,15 @@ const [formData, setFormData] = useState({
         </label>
 
         <select
-          name="role"
-          value={formData.role}
-          onChange={handleChange}
-          className="w-full p-4 mb-4 border border-[#713600]/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C05800]"
-        >
-          <option value="employee">
-            Employee
-          </option>
-
-          <option value="manager">
-            Manager
-          </option>
-        </select>
+  name="role"
+  value={formData.role}
+  onChange={handleChange}
+  className="w-full p-4 border border-[#713600]/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C05800]"
+  required
+>
+  <option value="employee">Employee</option>
+  <option value="manager">Manager</option>
+</select>
 
         {/* Signup Button */}
         <button
