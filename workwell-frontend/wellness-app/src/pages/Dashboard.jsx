@@ -125,80 +125,10 @@ const fetchAIInsight = async () => {
   }
 
   return (
-    <div className="min-h-screen flex bg-[#FDFBD4]">
-
-      {/* Sidebar */}
-      <div className="w-72 bg-[#38240D] text-[#FDFBD4] p-6 flex flex-col">
-        <div className="mb-12">
-
-  <h1 className="text-4xl font-bold tracking-tight">
-    WorkWell
-  </h1>
-
-  <p className="text-sm text-gray-300 mt-2">
-    AI Wellness Platform
-  </p>
-
-</div>
-
-        <div className="space-y-3">
-
-  <button
-    className="w-full text-left p-4 rounded-xl bg-[#C05800] text-white"
-  >
-    Dashboard
-  </button>
-
-  <button
-    onClick={() => navigate("/wellness")}
-    className="w-full text-left p-4 rounded-xl hover:bg-[#713600] transition"
-  >
-    Wellness Form
-  </button>
-
-  <button
-    onClick={() => navigate("/history")}
-    className="w-full text-left p-4 rounded-xl hover:bg-[#713600] transition"
-  >
-    Wellness History
-  </button>
-
- <button
-  onClick={() => navigate("/voice")}
-  className="
-    w-full
-    text-left
-    px-5
-    py-4
-    rounded-2xl
-    font-medium
-    transition-all
-    duration-300
-    bg-[#C05800]
-    text-white
-    hover:bg-[#D66A00]
-    shadow-md
-  "
->
-  🎤 Voice Wellness Coach
-</button>
-<div className="mt-auto pt-8 border-t border-[#713600] ">
-
-  <p className="text-sm text-gray-300">
-    Logged in as
-  </p>
-
-  <p className="font-semibold text-lg mt-1">
-    {localStorage.getItem("name")}
-  </p>
-
-</div>
-</div>
+    <div className="min-h-screen bg-[#FDFBD4]">
       
-      </div>
-
       {/* Main */}
-      <div className="flex-1 p-6">
+      <div className="p-8">
 
         {/* Header */}
         <div className="flex justify-between items-center mb-10">
@@ -220,16 +150,6 @@ const fetchAIInsight = async () => {
               className="bg-[#713600] text-white px-5 py-3 rounded-xl"
             >
               Refresh
-            </button>
-
-            <button
-              onClick={() => {
-                localStorage.clear();
-                navigate("/");
-              }}
-              className="bg-[#C05800] hover:bg-[#713600] text-white px-5 py-3 rounded-xl"
-            >
-              Logout
             </button>
 
           </div>
