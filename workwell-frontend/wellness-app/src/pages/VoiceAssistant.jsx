@@ -14,7 +14,7 @@ function VoiceAssistant() {
   const conversationRef = useRef([]);
   const currentQuestionRef = useRef("");
   const stoppedRef = useRef(false);
-
+  const selectedVoiceRef = useRef(null);
   useEffect(() => {
   stoppedRef.current = false;
   startConversation();
@@ -30,26 +30,80 @@ function VoiceAssistant() {
   };
 }, []);
 
-  const startConversation = async () => {
-    try {
-      setStatus("starting");
-      setError("");
+const loadPreferredVoice = () => {
+  return new Promise((resolve) => {
+    const findVoice = () => {
+      const voices = window.speechSynthesis.getVoices();
 
-      const response = await API.get("/voice/start");
+      if (voices.length === 0) {
+        return false;
+      }
 
-      const question = response.data.question;
+      const preferredVoice =
+        voices.find((voice) =>
+          voice.name.includes("Microsoft Aria")
+        ) ||
+        voices.find((voice) =>
+          voice.name.includes("Zira")
+        ) ||
+        voices.find((voice) =>
+          voice.name.includes("Google UK English Female")
+        ) ||
+        voices.find(
+          (voice) =>
+            voice.lang.startsWith("en") &&
+            voice.name.toLowerCase().includes("female")
+        ) ||
+        voices.find((voice) =>
+          voice.lang.startsWith("en")
+        );
 
-      setCurrentQuestion(question);
-      currentQuestionRef.current = question;
+      selectedVoiceRef.current = preferredVoice;
 
-      setStatus("ready");
-    } catch (error) {
-      console.error(error);
-      setStatus("error");
-      setError("Unable to start the wellness conversation.");
-    }
-  };
+      console.log(
+        "Locked voice:",
+        preferredVoice?.name
+      );
 
+      resolve(preferredVoice);
+
+      return true;
+    };
+
+    if (findVoice()) return;
+
+    window.speechSynthesis.onvoiceschanged = () => {
+      findVoice();
+    };
+  });
+};
+
+
+const startConversation = async () => {
+  try {
+    setStatus("starting");
+    setError("");
+
+    await loadPreferredVoice();
+
+    const response = await API.get("/voice/start");
+
+    const question = response.data.question;
+
+    setCurrentQuestion(question);
+    currentQuestionRef.current = question;
+
+    setStatus("ready");
+  } catch (error) {
+    console.error(error);
+
+    setStatus("error");
+
+    setError(
+      "Unable to start the wellness conversation."
+    );
+  }
+};
   const speakQuestion = (question) => {
     if (stoppedRef.current) return;
 
@@ -59,17 +113,8 @@ function VoiceAssistant() {
 
     const speech = new SpeechSynthesisUtterance(question);
 
-    const voices = window.speechSynthesis.getVoices();
-
-    const preferredVoice = voices.find(
-      (voice) =>
-        voice.name.includes("Zira") ||
-        voice.name.includes("Google UK English Female") ||
-        voice.name.includes("Microsoft Aria")
-    );
-
-    if (preferredVoice) {
-      speech.voice = preferredVoice;
+    if (selectedVoiceRef.current) {
+      speech.voice = selectedVoiceRef.current;
     }
 
     speech.rate = 0.95;
