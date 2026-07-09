@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import API from "../services/api";
@@ -6,21 +6,47 @@ import API from "../services/api";
 function Signup() {
   const navigate = useNavigate();
 
-const [formData, setFormData] = useState({
-  name: "",
-  email: "",
-  password: "",
-  team_id: "",
-  role: "employee",
-});
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    team_id: "",
+    role: "employee",
+  });
 
+  const [teams, setTeams] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [teamsLoading, setTeamsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchTeams();
+  }, []);
+
+  const fetchTeams = async () => {
+    try {
+      setTeamsLoading(true);
+
+      const response = await API.get("/teams");
+
+      setTeams(response.data);
+    } catch (error) {
+      console.error("Failed to load teams:", error);
+
+      toast.error(
+        "Unable to load teams. Please try again."
+      );
+    } finally {
+      setTeamsLoading(false);
+    }
+  };
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    const { name, value } = e.target;
+
+    setFormData((previousData) => ({
+      ...previousData,
+      [name]: value,
+    }));
   };
 
   const handleSignup = async (e) => {
@@ -28,20 +54,22 @@ const [formData, setFormData] = useState({
 
     if (isLoading) return;
 
+    if (!formData.team_id) {
+      toast.error("Please select a team.");
+      return;
+    }
+
     try {
       setIsLoading(true);
 
-      const response = await API.post(
+      await API.post(
         "/auth/signup",
         formData
       );
 
-      localStorage.setItem(
-        "user_id",
-        response.data.user_id
+      toast.success(
+        "Account created successfully!"
       );
-
-      toast.success("Account created successfully!");
 
       setTimeout(() => {
         navigate("/");
@@ -52,7 +80,7 @@ const [formData, setFormData] = useState({
 
       toast.error(
         error.response?.data?.detail ||
-        "Signup Failed"
+          "Signup failed"
       );
 
     } finally {
@@ -108,43 +136,77 @@ const [formData, setFormData] = useState({
           className="w-full p-4 mb-4 border border-[#713600]/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C05800]"
           required
         />
-        <input
-          type="text"
+
+        {/* Team */}
+        <label className="block mb-2 text-[#713600] font-medium">
+          Team
+        </label>
+
+        <select
           name="team_id"
-          placeholder="Team ID (Example: TEAM-001)"
           value={formData.team_id}
           onChange={handleChange}
-          className="w-full p-4 mb-6 border border-[#713600]/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C05800]"
+          disabled={teamsLoading}
+          className="w-full p-4 mb-4 border border-[#713600]/20 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#C05800] disabled:bg-gray-100"
           required
-        />
+        >
+          <option value="">
+            {teamsLoading
+              ? "Loading teams..."
+              : "Select your team"}
+          </option>
+
+          {teams.map((team) => (
+            <option
+              key={team.team_id}
+              value={team.team_id}
+            >
+              {team.name}
+            </option>
+          ))}
+        </select>
+
         {/* Role */}
         <label className="block mb-2 text-[#713600] font-medium">
           Role
         </label>
 
         <select
-  name="role"
-  value={formData.role}
-  onChange={handleChange}
-  className="w-full p-4 border border-[#713600]/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C05800]"
-  required
->
-  <option value="employee">Employee</option>
-  <option value="manager">Manager</option>
-</select>
+          name="role"
+          value={formData.role}
+          onChange={handleChange}
+          className="w-full p-4 mb-6 border border-[#713600]/20 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#C05800]"
+          required
+        >
+          <option value="employee">
+            Employee
+          </option>
+
+          <option value="manager">
+            Manager
+          </option>
+        </select>
 
         {/* Signup Button */}
         <button
           type="submit"
-          disabled={isLoading}
+          disabled={
+            isLoading ||
+            teamsLoading ||
+            teams.length === 0
+          }
           className={`w-full p-4 rounded-xl font-semibold text-white transition-all duration-300 ${
-            isLoading
+            isLoading ||
+            teamsLoading ||
+            teams.length === 0
               ? "bg-gray-400 cursor-not-allowed"
               : "bg-[#C05800] hover:bg-[#713600]"
           }`}
         >
           {isLoading
             ? "Creating Account..."
+            : teamsLoading
+            ? "Loading Teams..."
             : "Create Account"}
         </button>
 
