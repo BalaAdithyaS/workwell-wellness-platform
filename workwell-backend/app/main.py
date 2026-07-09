@@ -10,6 +10,8 @@ from app.api.voice_assistant import router as voice_router
 
 from app.database.db import Base, engine
 from app.models.voice_assessment import VoiceAssessment
+from app.models.team import Team
+from app.api.teams import router as teams_router
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -107,4 +109,9 @@ app.include_router(
     voice_router,
     prefix="/voice",
     tags=["Voice Assistant"]
+)
+app.include_router(
+    teams_router,
+    prefix="/teams",
+    tags=["Teams"]
 )

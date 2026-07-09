@@ -136,24 +136,29 @@ def get_ai_insight(
     user_id: str,
     db: Session = Depends(get_db)
 ):
-
-    latest_entry = db.execute(
-        select(WellnessEntry)
-        .where(WellnessEntry.user_id == user_id)
-        .order_by(WellnessEntry.created_at.desc())
-    ).scalars().first()
+    latest_entry = (
+        db.query(WellnessEntry)
+        .filter(
+            WellnessEntry.user_id == user_id
+        )
+        .order_by(
+            WellnessEntry.created_at.desc()
+        )
+        .first()
+    )
 
     if not latest_entry:
         return {
-            "sentiment": "Unknown",
-            "recommendation": "No wellness data found."
+            "has_data": False,
+            "sentiment": None,
+            "recommendation": None
         }
 
     return {
+        "has_data": True,
         "sentiment": latest_entry.sentiment,
         "recommendation": latest_entry.recommendation
-    }
-@router.get("/manager-summary")
+    }@router.get("/manager-summary")
 def get_manager_summary(
     team_id: str,
     db: Session = Depends(get_db)

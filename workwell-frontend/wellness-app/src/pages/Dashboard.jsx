@@ -226,7 +226,7 @@ const fetchAIInsight = async () => {
 
 </div>
         {/* AI Insight Card */}
-{aiInsight && (
+{aiInsight?.has_data && (
   <div className="bg-white rounded-3xl p-6 shadow-lg mb-8 border-l-8 border-[#C05800]">
 
     <h2 className="text-2xl font-bold text-[#38240D] mb-4">
