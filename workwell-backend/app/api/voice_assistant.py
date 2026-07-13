@@ -64,11 +64,11 @@ No explanation.
 def final_analysis(payload: dict):
 
     conversation = payload["conversation"]
+    user_id = payload["user_id"]
 
     full_text = ""
 
     for item in conversation:
-
         full_text += f"""
 Question: {item['question']}
 Answer: {item['answer']}
@@ -83,17 +83,17 @@ Answer: {item['answer']}
         db = SessionLocal()
 
         assessment = VoiceAssessment(
-    user_id="demo-user",
-    sentiment=parsed["sentiment"],
-    risk_level=parsed["risk_level"],
-    recommendation=parsed["recommendation"]
-)
+            user_id=user_id,
+            sentiment=parsed["sentiment"],
+            risk_level=parsed["risk_level"],
+            recommendation=parsed["recommendation"]
+        )
 
         db.add(assessment)
         db.commit()
+        db.refresh(assessment)
 
     except Exception as e:
-
         print("Voice Assessment Save Error:", e)
 
     return {
