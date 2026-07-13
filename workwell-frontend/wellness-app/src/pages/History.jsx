@@ -3,6 +3,7 @@ import API from "../services/api";
 
 function History() {
   const [history, setHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchHistory();
@@ -10,80 +11,192 @@ function History() {
 
   const fetchHistory = async () => {
     try {
+      setLoading(true);
+
       const userId =
         localStorage.getItem("user_id");
 
       const response = await API.get(
-        `/wellness/history/${userId}`
+        `/wellness/unified-history/${userId}`
       );
 
-      console.log(response.data);
-
       setHistory(response.data);
-
     } catch (error) {
-      console.error(error);
-      alert("Failed to load history");
+      console.error(
+        "Failed to load history:",
+        error
+      );
+    } finally {
+      setLoading(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#FDFBD4] flex items-center justify-center">
+        <p className="text-xl font-semibold text-[#38240D]">
+          Loading wellness history...
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#FDFBD4] p-8">
 
-      <h1 className="text-5xl font-bold text-[#38240D] mb-8">
-        Wellness History
-      </h1>
+      <div className="max-w-7xl mx-auto">
 
-      <div className="bg-white rounded-3xl shadow-lg overflow-hidden">
+        <div className="mb-8">
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#C05800]">
+            Your Wellness Journey
+          </p>
 
-        <table className="w-full">
+          <h1 className="text-5xl font-bold text-[#38240D] mt-2">
+            Wellness History
+          </h1>
 
-          <thead className="bg-[#38240D] text-white">
+          <p className="text-[#713600] mt-3">
+            Review your form submissions and voice wellness sessions.
+          </p>
+        </div>
 
-            <tr>
-              <th className="p-4 text-left">Date</th>
-              <th className="p-4 text-left">Mood</th>
-              <th className="p-4 text-left">Stress</th>
-              <th className="p-4 text-left">Burnout</th>
-              <th className="p-4 text-left">Notes</th>
-            </tr>
+        {history.length === 0 ? (
 
-          </thead>
+          <div className="bg-white rounded-3xl shadow-lg p-16 text-center">
 
-          <tbody>
+            <h2 className="text-2xl font-bold text-[#38240D]">
+              No wellness history yet
+            </h2>
+
+            <p className="text-[#713600] mt-3">
+              Complete a wellness form or voice session to see your history here.
+            </p>
+
+          </div>
+
+        ) : (
+
+          <div className="space-y-4">
 
             {history.map((entry) => (
-              <tr
-                key={entry.id}
-                className="border-b"
+
+              <div
+                key={`${entry.type}-${entry.id}`}
+                className="bg-white rounded-3xl shadow-md p-6"
               >
-                <td className="p-4">
-                  {new Date(
-                    entry.created_at
-                  ).toLocaleDateString()}
-                </td>
 
-                <td className="p-4">
-                  {entry.mood_score}
-                </td>
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
 
-                <td className="p-4">
-                  {entry.stress_level}
-                </td>
+                  <div className="flex items-center gap-4">
 
-                <td className="p-4">
-                  {entry.burnout_risk}
-                </td>
+                    <div
+                      className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold ${
+                        entry.type === "voice"
+                          ? "bg-[#C05800] text-white"
+                          : "bg-[#FFF8D6] text-[#38240D]"
+                      }`}
+                    >
+                      {entry.type === "voice"
+                        ? "V"
+                        : "F"}
+                    </div>
 
-                <td className="p-4">
-                  {entry.notes}
-                </td>
-              </tr>
+                    <div>
+                      <div className="flex items-center gap-3">
+
+                        <h2 className="text-xl font-bold text-[#38240D]">
+                          {entry.type === "voice"
+                            ? "Voice Wellness Session"
+                            : "Wellness Form"}
+                        </h2>
+
+                        <span className="text-xs font-semibold uppercase tracking-wide bg-[#FFF8D6] text-[#713600] px-3 py-1 rounded-full">
+                          {entry.type}
+                        </span>
+
+                      </div>
+
+                      <p className="text-[#713600] mt-1">
+                        {new Date(
+                          entry.created_at
+                        ).toLocaleString()}
+                      </p>
+                    </div>
+
+                  </div>
+
+                  <div className="flex flex-wrap gap-3">
+
+                    {entry.type === "form" && (
+                      <>
+                        <div className="bg-[#FDFBD4] rounded-xl px-4 py-3">
+                          <p className="text-xs text-[#713600]">
+                            Mood
+                          </p>
+
+                          <p className="font-bold text-[#38240D]">
+                            {entry.mood_score ?? "—"}
+                          </p>
+                        </div>
+
+                        <div className="bg-[#FDFBD4] rounded-xl px-4 py-3">
+                          <p className="text-xs text-[#713600]">
+                            Stress
+                          </p>
+
+                          <p className="font-bold text-[#38240D]">
+                            {entry.stress_level ?? "—"}
+                          </p>
+                        </div>
+                      </>
+                    )}
+
+                    <div className="bg-[#FDFBD4] rounded-xl px-4 py-3">
+                      <p className="text-xs text-[#713600]">
+                        {entry.type === "voice"
+                          ? "Risk"
+                          : "Burnout"}
+                      </p>
+
+                      <p className="font-bold text-[#38240D]">
+                        {entry.burnout_risk ?? "—"}
+                      </p>
+                    </div>
+
+                    <div className="bg-[#FDFBD4] rounded-xl px-4 py-3">
+                      <p className="text-xs text-[#713600]">
+                        Sentiment
+                      </p>
+
+                      <p className="font-bold text-[#38240D]">
+                        {entry.sentiment ?? "—"}
+                      </p>
+                    </div>
+
+                  </div>
+
+                </div>
+
+                {entry.recommendation && (
+                  <div className="mt-5 pt-5 border-t border-[#713600]/10">
+
+                    <p className="text-sm font-semibold text-[#38240D]">
+                      Recommendation
+                    </p>
+
+                    <p className="text-[#713600] mt-2 leading-relaxed">
+                      {entry.recommendation}
+                    </p>
+
+                  </div>
+                )}
+
+              </div>
+
             ))}
 
-          </tbody>
-
-        </table>
+          </div>
+        )}
 
       </div>
 

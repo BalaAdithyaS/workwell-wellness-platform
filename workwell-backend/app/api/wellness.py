@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.database.db import SessionLocal
 from app.models.wellness import WellnessEntry
 from app.schemas.wellness_schema import WellnessCreate
+from app.models.voice_assessment import VoiceAssessment
 
 router = APIRouter()
 
@@ -104,3 +105,58 @@ def get_wellness_history(
     ).scalars().all()
 
     return entries
+@router.get("/unified-history/{user_id}")
+def get_unified_history(
+    user_id: str,
+    db: Session = Depends(get_db)
+):
+    wellness_entries = (
+        db.query(WellnessEntry)
+        .filter(
+            WellnessEntry.user_id == user_id
+        )
+        .all()
+    )
+
+    voice_assessments = (
+        db.query(VoiceAssessment)
+        .filter(
+            VoiceAssessment.user_id == user_id
+        )
+        .all()
+    )
+
+    history = []
+
+    for entry in wellness_entries:
+        history.append({
+            "id": str(entry.id),
+            "type": "form",
+            "created_at": entry.created_at,
+            "mood_score": entry.mood_score,
+            "stress_level": entry.stress_level,
+            "burnout_risk": entry.burnout_risk,
+            "sentiment": entry.sentiment,
+            "notes": entry.notes,
+            "recommendation": entry.recommendation,
+        })
+
+    for assessment in voice_assessments:
+        history.append({
+            "id": str(assessment.id),
+            "type": "voice",
+            "created_at": assessment.created_at,
+            "mood_score": None,
+            "stress_level": None,
+            "burnout_risk": assessment.risk_level,
+            "sentiment": assessment.sentiment,
+            "notes": "Voice wellness assessment",
+            "recommendation": assessment.recommendation,
+        })
+
+    history.sort(
+        key=lambda item: item["created_at"],
+        reverse=True
+    )
+
+    return history

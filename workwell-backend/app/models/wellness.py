@@ -10,7 +10,6 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID
 from datetime import datetime
 import uuid
-
 from app.database.db import Base
 
 class WellnessEntry(Base):
