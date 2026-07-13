@@ -158,7 +158,9 @@ def get_ai_insight(
         "has_data": True,
         "sentiment": latest_entry.sentiment,
         "recommendation": latest_entry.recommendation
-    }@router.get("/manager-summary")
+    }
+
+@router.get("/manager-summary")
 def get_manager_summary(
     team_id: str,
     db: Session = Depends(get_db)
