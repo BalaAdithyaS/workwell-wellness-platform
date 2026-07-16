@@ -85,24 +85,31 @@ Answer: {item['answer']}
 
         parsed = json.loads(result)
 
-        # Save Voice Assessment
+        print("========== GEMINI ==========")
+        print(parsed)
+
         voice_assessment = VoiceAssessment(
             user_id=user_id,
-            sentiment=parsed["sentiment"],
-            risk_level=parsed["risk_level"],
-            recommendation=parsed["recommendation"]
+            sentiment=parsed.get("sentiment", "neutral"),
+            risk_level=parsed.get("risk_level", "Low"),
+            recommendation=parsed.get(
+                "recommendation",
+                "No recommendation."
+            )
         )
 
         db.add(voice_assessment)
 
-        # Save Wellness Entry for dashboard analytics
         wellness_entry = WellnessEntry(
             user_id=UUID(user_id),
-            mood_score=parsed["mood_score"],
-            stress_level=parsed["stress_level"],
-            burnout_risk=parsed["burnout_risk"],
-            sentiment=parsed["sentiment"],
-            recommendation=parsed["recommendation"],
+            mood_score=int(parsed.get("mood_score", 5)),
+            stress_level=int(parsed.get("stress_level", 5)),
+            burnout_risk=int(parsed.get("burnout_risk", 3)),
+            sentiment=parsed.get("sentiment", "neutral"),
+            recommendation=parsed.get(
+                "recommendation",
+                "No recommendation."
+            ),
             notes="Voice Wellness Assessment"
         )
 
@@ -110,21 +117,23 @@ Answer: {item['answer']}
 
         db.commit()
 
-        db.refresh(voice_assessment)
-        db.refresh(wellness_entry)
+        print("VOICE ENTRY SAVED")
 
     except Exception as e:
 
         db.rollback()
 
-        print("Voice Assessment Save Error:", e)
+        import traceback
+        traceback.print_exc()
+
+        raise e
 
     finally:
 
         db.close()
 
     return {
-        "analysis": result
+        "analysis": parsed
     }
 
 
