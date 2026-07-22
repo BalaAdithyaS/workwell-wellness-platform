@@ -29,20 +29,21 @@ WorkWell is an AI-powered employee wellness platform designed to help organizati
 ## Project Structure
 
 WorkWell/
-├── backend/
-└── frontend/
+├── backend-v2/
+└── workwell-frontend/
 
 ## Run Backend
 
 ```bash
-cd backend
+cd backend-v2
+pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
 ## Run Frontend
 
 ```bash
-cd frontend
+cd workwell-frontend/wellness-app
 npm install
 npm run dev
 ```
