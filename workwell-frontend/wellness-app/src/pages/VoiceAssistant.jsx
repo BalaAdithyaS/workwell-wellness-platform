@@ -1,168 +1,83 @@
 import { useEffect, useRef, useState } from "react";
 import API from "../services/api";
 
-function VoiceAssistant() {
-  const [currentQuestion, setCurrentQuestion] = useState("");
-  const [answer, setAnswer] = useState("");
-  const [conversation, setConversation] = useState([]);
-  const [analysis, setAnalysis] = useState(null);
+const GREETING =
+  "Hi there! I'm your wellness coach. I'd love to hear how you're doing — what's been on your mind lately?";
 
-  const [status, setStatus] = useState("starting");
+function VoiceAssistant() {
+  const [conversation, setConversation] = useState([]);
+  const [currentQuestion, setCurrentQuestion] = useState(GREETING);
+  const [answer, setAnswer] = useState("");
+  const [analysis, setAnalysis] = useState(null);
+  const [status, setStatus] = useState("ready");
   const [error, setError] = useState("");
 
   const recognitionRef = useRef(null);
   const conversationRef = useRef([]);
-  const currentQuestionRef = useRef("");
   const stoppedRef = useRef(false);
   const selectedVoiceRef = useRef(null);
+
   useEffect(() => {
-  stoppedRef.current = false;
-  startConversation();
+    stoppedRef.current = false;
+    loadPreferredVoice().then(() => setStatus("ready"));
 
-  return () => {
-    stoppedRef.current = true;
-
-    if (recognitionRef.current) {
-      recognitionRef.current.abort();
-    }
-
-    window.speechSynthesis.cancel();
-  };
-}, []);
-
-const loadPreferredVoice = () => {
-  return new Promise((resolve) => {
-    const findVoice = () => {
-      const voices = window.speechSynthesis.getVoices();
-
-      if (voices.length === 0) {
-        return false;
-      }
-
-      const preferredVoice =
-        voices.find((voice) =>
-          voice.name.includes("Microsoft Aria")
-        ) ||
-        voices.find((voice) =>
-          voice.name.includes("Zira")
-        ) ||
-        voices.find((voice) =>
-          voice.name.includes("Google UK English Female")
-        ) ||
-        voices.find(
-          (voice) =>
-            voice.lang.startsWith("en") &&
-            voice.name.toLowerCase().includes("female")
-        ) ||
-        voices.find((voice) =>
-          voice.lang.startsWith("en")
-        );
-
-      selectedVoiceRef.current = preferredVoice;
-
-      console.log(
-        "Locked voice:",
-        preferredVoice?.name
-      );
-
-      resolve(preferredVoice);
-
-      return true;
+    return () => {
+      stoppedRef.current = true;
+      if (recognitionRef.current) recognitionRef.current.abort();
+      window.speechSynthesis.cancel();
     };
+  }, []);
 
-    if (findVoice()) return;
+  const loadPreferredVoice = () =>
+    new Promise((resolve) => {
+      const findVoice = () => {
+        const voices = window.speechSynthesis.getVoices();
+        if (voices.length === 0) return false;
+        selectedVoiceRef.current =
+          voices.find((v) => v.name.includes("Microsoft Aria")) ||
+          voices.find((v) => v.name.includes("Zira")) ||
+          voices.find((v) => v.name.includes("Google UK English Female")) ||
+          voices.find(
+            (v) => v.lang.startsWith("en") && v.name.toLowerCase().includes("female"),
+          ) ||
+          voices.find((v) => v.lang.startsWith("en"));
+        resolve(selectedVoiceRef.current);
+        return true;
+      };
+      if (findVoice()) return;
+      window.speechSynthesis.onvoiceschanged = () => findVoice();
+    });
 
-    window.speechSynthesis.onvoiceschanged = () => {
-      findVoice();
-    };
-  });
-};
-
-
-const startConversation = async () => {
-  try {
-    setStatus("starting");
-    setError("");
-
-    await loadPreferredVoice();
-
-    const response = await API.get("/voice/start");
-
-    const question = response.data.question;
-
-    setCurrentQuestion(question);
-    currentQuestionRef.current = question;
-
-    setStatus("ready");
-  } catch (error) {
-    console.error(error);
-
-    setStatus("error");
-
-    setError(
-      "Unable to start the wellness conversation."
-    );
-  }
-};
-  const speakQuestion = (question) => {
-    if (stoppedRef.current) return;
-
-    setStatus("speaking");
-
-    window.speechSynthesis.cancel();
-
-    const speech = new SpeechSynthesisUtterance(question);
-
-    if (selectedVoiceRef.current) {
-      speech.voice = selectedVoiceRef.current;
-    }
-
-    speech.rate = 0.95;
-    speech.pitch = 1.05;
-
-    speech.onend = () => {
-      if (!stoppedRef.current) {
-        setTimeout(() => {
-          startListening();
-        }, 400);
-      }
-    };
-
-    speech.onerror = () => {
-      if (!stoppedRef.current) {
-        startListening();
-      }
-    };
-
-    window.speechSynthesis.speak(speech);
-  };
+  const speak = (text) =>
+    new Promise((resolve) => {
+      if (stoppedRef.current) { resolve(); return; }
+      setStatus("speaking");
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(text);
+      if (selectedVoiceRef.current) utter.voice = selectedVoiceRef.current;
+      utter.rate = 0.95;
+      utter.pitch = 1.05;
+      utter.onend = () => resolve();
+      utter.onerror = () => resolve();
+      window.speechSynthesis.speak(utter);
+    });
 
   const startListening = () => {
     if (stoppedRef.current) return;
-
     const SpeechRecognition =
-      window.SpeechRecognition ||
-      window.webkitSpeechRecognition;
-
+      window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
       setStatus("error");
-      setError(
-        "Voice recognition is not supported in this browser. Please use Chrome or Edge."
-      );
+      setError("Voice recognition is not supported in this browser. Please use Chrome or Edge.");
       return;
     }
-
-    if (recognitionRef.current) {
-      recognitionRef.current.abort();
-    }
+    if (recognitionRef.current) recognitionRef.current.abort();
 
     const recognition = new SpeechRecognition();
-
     recognition.lang = "en-US";
     recognition.continuous = false;
     recognition.interimResults = true;
     recognition.maxAlternatives = 1;
-
     recognitionRef.current = recognition;
 
     let finalTranscript = "";
@@ -174,286 +89,220 @@ const startConversation = async () => {
     };
 
     recognition.onresult = (event) => {
-      let interimTranscript = "";
-
-      for (
-        let i = event.resultIndex;
-        i < event.results.length;
-        i++
-      ) {
-        const transcript =
-          event.results[i][0].transcript;
-
-        if (event.results[i].isFinal) {
-          finalTranscript += transcript;
-        } else {
-          interimTranscript += transcript;
-        }
+      let interim = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const t = event.results[i][0].transcript;
+        if (event.results[i].isFinal) finalTranscript += t;
+        else interim += t;
       }
-
-      setAnswer(
-        finalTranscript || interimTranscript
-      );
+      setAnswer(finalTranscript || interim);
     };
 
-    recognition.onspeechend = () => {
-      recognition.stop();
-    };
+    recognition.onspeechend = () => recognition.stop();
 
     recognition.onend = () => {
       recognitionRef.current = null;
-
-      const cleanAnswer = finalTranscript.trim();
-
-      if (cleanAnswer && !stoppedRef.current) {
-        submitAnswer(cleanAnswer);
-      } else if (!stoppedRef.current) {
-        setStatus("ready");
-      }
+      const clean = finalTranscript.trim();
+      if (clean && !stoppedRef.current) handleAnswer(clean);
+      else if (!stoppedRef.current) setStatus("ready");
     };
 
     recognition.onerror = (event) => {
       recognitionRef.current = null;
-
-      if (
-        event.error === "no-speech" ||
-        event.error === "aborted"
-      ) {
+      if (event.error === "no-speech" || event.error === "aborted") {
         setStatus("ready");
         return;
       }
-
-      console.error("Speech recognition error:", event.error);
-
       setStatus("error");
-      setError(
-        "I couldn't hear that clearly. Tap the voice button and try again."
-      );
+      setError("I couldn't hear that clearly. Tap the mic and try again.");
     };
 
-    try {
-      recognition.start();
-    } catch (error) {
-      console.error(error);
-      setStatus("ready");
-    }
+    try { recognition.start(); } catch { setStatus("ready"); }
   };
 
-  const submitAnswer = async (spokenAnswer) => {
+  const handleAnswer = async (spokenAnswer) => {
     if (!spokenAnswer || stoppedRef.current) return;
-
     setStatus("processing");
 
-    const updatedConversation = [
+    const updatedConv = [
       ...conversationRef.current,
-      {
-        question: currentQuestionRef.current,
-        answer: spokenAnswer,
-      },
+      { role: "coach", content: currentQuestion },
+      { role: "user", content: spokenAnswer },
     ];
-
-    conversationRef.current = updatedConversation;
-
-    setConversation(updatedConversation);
+    conversationRef.current = updatedConv;
+    setConversation(
+      updatedConv.map((m) => ({
+        who: m.role === "coach" ? "coach" : "you",
+        text: m.content,
+      })),
+    );
     setAnswer(spokenAnswer);
 
     try {
-      const response = await API.post(
-        "/voice/next-question",
-        {
-          conversation: updatedConversation,
-        }
-      );
+      const { data } = await API.post("/voice/chat", {
+        conversation: updatedConv,
+      });
 
-      if (response.data.done) {
-        await completeAssessment(
-          updatedConversation
-        );
+      if (data.done || !data.next_question) {
+        await completeAssessment(updatedConv);
         return;
       }
 
-      const nextQuestion = response.data.question;
-
+      setCurrentQuestion(data.next_question);
       setAnswer("");
-      setCurrentQuestion(nextQuestion);
-
-      currentQuestionRef.current = nextQuestion;
-
-      speakQuestion(nextQuestion);
-    } catch (error) {
-      console.error(
-        "Next Question Error:",
-        error
-      );
-
-      setStatus("error");
-      setError(
-        "Something went wrong while processing your response."
-      );
+      await speak(data.next_question);
+      startListening();
+    } catch (err) {
+      console.error("Chat error:", err);
+      const msg =
+        err.response?.data?.detail || err.message || "Unknown error";
+      if (
+        msg.toLowerCase().includes("quota") ||
+        msg.toLowerCase().includes("unavailable") ||
+        err.response?.status === 503
+      ) {
+        setStatus("error");
+        setError(
+          "AI coaching is temporarily unavailable because the Gemini API quota has been reached. You can finish your session now with what you have shared.",
+        );
+        if (conversationRef.current.length >= 2) {
+          await completeAssessment(conversationRef.current);
+        }
+      } else {
+        setStatus("error");
+        setError(`Could not continue: ${msg}. Tap the mic to try again.`);
+      }
     }
   };
 
-  const completeAssessment = async (
-    finalConversation
-  ) => {
+  const completeAssessment = async (finalConversation) => {
     try {
       setStatus("processing");
+      setError("");
 
-      const userId =
-        localStorage.getItem("user_id");
+      const transcriptText = finalConversation
+        .map((m) => `${m.role === "coach" ? "Coach" : "User"}: ${m.content}`)
+        .join("\n\n");
 
-      const response = await API.post(
-        "/voice/final-analysis",
-        {
-          user_id: userId,
-          conversation: finalConversation,
-        }
-      );
+      const { data } = await API.post("/voice/analyze", {
+        conversation: transcriptText,
+      });
 
-      const parsed =
-        typeof response.data.analysis === "string"
-          ? JSON.parse(response.data.analysis)
-          : response.data.analysis;
-
-      setAnalysis(parsed);
+      setAnalysis({
+        sentiment: data.sentiment,
+        recommendation: data.recommendation,
+        mood_score: data.mood_score,
+        stress_level: data.stress_level,
+        burnout_risk: data.burnout_risk,
+        sleep_hours: data.sleep_hours,
+        energy_level: data.energy_level,
+      });
       setStatus("completed");
-
       window.speechSynthesis.cancel();
-    } catch (error) {
-      console.error(
-        "Final Analysis Error:",
-        error
-      );
-
+    } catch (err) {
+      console.error("Analysis error:", err);
+      const detail = err.response?.data?.detail || err.message || "";
       setStatus("error");
-      setError(
-        "Unable to generate your wellness report."
-      );
+      if (
+        detail.toLowerCase().includes("quota") ||
+        err.response?.status === 503
+      ) {
+        setError(
+          "AI analysis is temporarily unavailable because the Gemini API quota has been reached. Your conversation has been saved.",
+        );
+      } else {
+        setError(`Unable to generate your wellness report: ${detail}`);
+      }
     }
   };
 
-  const finishConversation = async () => {
+  const finishConversation = () => {
     if (conversationRef.current.length === 0) {
-      setError(
-        "Complete at least one response first."
-      );
+      setError("Complete at least one response first.");
       return;
     }
-
     if (recognitionRef.current) {
       recognitionRef.current.abort();
       recognitionRef.current = null;
     }
-
     window.speechSynthesis.cancel();
-
-    await completeAssessment(
-      conversationRef.current
-    );
+    completeAssessment(conversationRef.current);
   };
 
   const statusText = {
-    starting: "Preparing your session",
+    ready: "Ready when you are",
     speaking: "Coach is speaking",
     listening: "Listening to you",
     processing: "Understanding your response",
-    ready: "Ready when you are",
     completed: "Assessment complete",
     error: "Something went wrong",
   };
 
+  const turnCount = Math.floor(conversation.length / 2);
+
   return (
     <div className="min-h-screen bg-[#FDFBD4] px-6 py-10">
-
       <div className="max-w-6xl mx-auto">
-
         {!analysis ? (
           <div className="grid lg:grid-cols-[1fr_380px] gap-8">
-
             {/* Main Conversation Area */}
             <div className="bg-white rounded-[32px] shadow-lg p-8 lg:p-12 min-h-[700px] flex flex-col">
-
-              {/* Header */}
               <div className="mb-10">
-
                 <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#C05800]">
                   Private Wellness Session
                 </p>
-
                 <h1 className="text-4xl lg:text-5xl font-bold text-[#38240D] mt-3">
                   AI Wellness Coach
                 </h1>
-
                 <p className="text-[#713600] mt-3">
                   A natural voice conversation about how you're doing.
                 </p>
-
               </div>
 
-              {/* Voice Experience */}
               <div className="flex-1 flex flex-col items-center justify-center text-center">
-
-                {/* Voice Orb */}
                 <div className="relative flex items-center justify-center mb-10">
-
                   {status === "listening" && (
                     <>
                       <div className="absolute w-48 h-48 rounded-full bg-[#C05800]/10 animate-ping" />
                       <div className="absolute w-36 h-36 rounded-full bg-[#C05800]/20 animate-pulse" />
                     </>
                   )}
-
                   {status === "speaking" && (
                     <div className="absolute w-44 h-44 rounded-full bg-[#713600]/10 animate-pulse" />
                   )}
-
                   <button
                     onClick={() => {
-                       if (status === "ready" || status === "error") {
-                          speakQuestion(currentQuestionRef.current);
-                        }
+                      if (status === "ready" || status === "error") {
+                        speak(currentQuestion).then(() => startListening());
+                      }
                     }}
-                    disabled={
-                      status === "processing" ||
-                      status === "speaking" ||
-                      status === "starting"
-                    }
+                    disabled={status === "processing" || status === "speaking"}
                     className={`relative z-10 w-32 h-32 rounded-full flex items-center justify-center text-4xl shadow-xl transition-all duration-500 ${
                       status === "listening"
                         ? "bg-[#C05800] text-white scale-110"
                         : status === "processing"
-                        ? "bg-[#38240D] text-white"
-                        : status === "speaking"
-                        ? "bg-[#713600] text-white"
-                        : "bg-[#C05800] text-white hover:scale-105"
+                          ? "bg-[#38240D] text-white"
+                          : status === "speaking"
+                            ? "bg-[#713600] text-white"
+                            : "bg-[#C05800] text-white hover:scale-105"
                     }`}
                   >
-                    {status === "processing"
-                      ? "•••"
-                      : status === "speaking"
-                      ? "◖"
-                      : "●"}
+                    {status === "processing" ? "..." : status === "speaking" ? "◖" : "●"}
                   </button>
-
                 </div>
 
-                {/* Status */}
                 <p className="text-sm uppercase tracking-[0.18em] font-semibold text-[#C05800]">
                   {statusText[status]}
                 </p>
 
-                {/* Current Question */}
                 <h2 className="text-3xl lg:text-4xl font-semibold text-[#38240D] max-w-3xl mt-5 leading-tight">
-                  {currentQuestion ||
-                    "Starting your conversation..."}
+                  {currentQuestion}
                 </h2>
 
-                {/* Live Transcript */}
                 <div className="mt-10 min-h-[90px] max-w-2xl w-full">
-
                   {answer ? (
                     <div className="bg-[#FFF8D6] rounded-2xl px-6 py-5 text-[#38240D] text-lg">
-                      “{answer}”
+                      &ldquo;{answer}&rdquo;
                     </div>
                   ) : (
                     <p className="text-gray-400">
@@ -462,84 +311,53 @@ const startConversation = async () => {
                         : "Your response will appear here."}
                     </p>
                   )}
-
                 </div>
 
                 {error && (
-                  <div className="mt-6 bg-red-50 text-red-700 rounded-2xl px-5 py-4">
+                  <div className="mt-6 bg-red-50 text-red-700 rounded-2xl px-5 py-4 max-w-2xl">
                     {error}
                   </div>
                 )}
 
                 {status === "ready" && (
                   <button
-                    onClick={() => speakQuestion(currentQuestionRef.current)}
+                    onClick={() =>
+                      speak(currentQuestion).then(() => startListening())
+                    }
                     className="mt-6 px-7 py-3 rounded-xl bg-[#C05800] text-white font-semibold hover:bg-[#713600] transition"
                   >
                     Speak Again
                   </button>
                 )}
-
               </div>
-
             </div>
 
             {/* Session Panel */}
             <div className="space-y-6">
-
               <div className="bg-[#38240D] text-white rounded-[32px] p-8">
-
-                <p className="text-sm text-gray-300">
-                  Session Progress
-                </p>
-
-                <p className="text-5xl font-bold mt-3">
-                  {conversation.length}
-                </p>
-
-                <p className="text-gray-300 mt-2">
-                  responses completed
-                </p>
-
+                <p className="text-sm text-gray-300">Session Progress</p>
+                <p className="text-5xl font-bold mt-3">{turnCount}</p>
+                <p className="text-gray-300 mt-2">responses completed</p>
                 <div className="h-2 bg-white/10 rounded-full mt-6 overflow-hidden">
                   <div
                     className="h-full bg-[#C05800] rounded-full transition-all duration-500"
                     style={{
-                      width: `${Math.min(
-                        conversation.length * 20,
-                        100
-                      )}%`,
+                      width: `${Math.min((turnCount / 5) * 100, 100)}%`,
                     }}
                   />
                 </div>
-
               </div>
 
               <div className="bg-white rounded-[32px] shadow-lg p-7">
-
-                <h3 className="text-xl font-bold text-[#38240D]">
-                  How it works
-                </h3>
-
+                <h3 className="text-xl font-bold text-[#38240D]">How it works</h3>
                 <div className="mt-6 space-y-5 text-[#713600]">
-
-                  <p>
-                    The coach asks you a question aloud.
-                  </p>
-
-                  <p>
-                    Your microphone opens automatically.
-                  </p>
-
-                  <p>
-                    When you stop speaking, your answer is sent automatically.
-                  </p>
-
+                  <p>The coach listens to your responses.</p>
+                  <p>Each follow-up question adapts to what you shared.</p>
+                  <p>When enough information is gathered, your wellness report is generated.</p>
                 </div>
-
               </div>
 
-              {conversation.length > 0 && (
+              {turnCount > 0 && (
                 <button
                   onClick={finishConversation}
                   disabled={status === "processing"}
@@ -548,76 +366,76 @@ const startConversation = async () => {
                   Finish Session
                 </button>
               )}
-
             </div>
-
           </div>
         ) : (
-
           /* Final Report */
           <div className="max-w-4xl mx-auto">
-
             <div className="bg-white rounded-[32px] shadow-xl overflow-hidden">
-
               <div className="bg-[#38240D] text-white p-10">
-
                 <p className="text-[#FDFBD4] uppercase tracking-[0.2em] text-sm">
                   Session Complete
                 </p>
-
-                <h1 className="text-4xl font-bold mt-3">
-                  Your Wellness Report
-                </h1>
-
+                <h1 className="text-4xl font-bold mt-3">Your Wellness Report</h1>
               </div>
 
               <div className="p-10">
-
                 <div className="grid md:grid-cols-2 gap-6">
-
                   <div className="bg-[#FFF8D6] rounded-3xl p-7">
-                    <p className="text-[#713600]">
-                      Sentiment
-                    </p>
-
+                    <p className="text-[#713600]">Mood Score</p>
                     <p className="text-3xl font-bold text-[#38240D] mt-2">
+                      {analysis.mood_score}/10
+                    </p>
+                  </div>
+                  <div className="bg-[#FFF8D6] rounded-3xl p-7">
+                    <p className="text-[#713600]">Stress Level</p>
+                    <p className="text-3xl font-bold text-[#38240D] mt-2">
+                      {analysis.stress_level}/10
+                    </p>
+                  </div>
+                  <div className="bg-[#FFF8D6] rounded-3xl p-7">
+                    <p className="text-[#713600]">Sentiment</p>
+                    <p className="text-3xl font-bold text-[#38240D] mt-2 capitalize">
                       {analysis.sentiment}
                     </p>
                   </div>
-
                   <div className="bg-[#FFF8D6] rounded-3xl p-7">
-                    <p className="text-[#713600]">
-                      Risk Level
-                    </p>
-
+                    <p className="text-[#713600]">Burnout Risk</p>
                     <p className="text-3xl font-bold text-[#38240D] mt-2">
-                      {analysis.risk_level}
+                      {analysis.burnout_risk}/10
                     </p>
                   </div>
-
+                  {analysis.sleep_hours != null && (
+                    <div className="bg-[#FFF8D6] rounded-3xl p-7">
+                      <p className="text-[#713600]">Sleep Hours</p>
+                      <p className="text-3xl font-bold text-[#38240D] mt-2">
+                        {analysis.sleep_hours}h
+                      </p>
+                    </div>
+                  )}
+                  {analysis.energy_level && (
+                    <div className="bg-[#FFF8D6] rounded-3xl p-7">
+                      <p className="text-[#713600]">Energy Level</p>
+                      <p className="text-3xl font-bold text-[#38240D] mt-2">
+                        {analysis.energy_level}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="mt-6 bg-[#FDFBD4] rounded-3xl p-8">
-
                   <h2 className="text-2xl font-bold text-[#38240D]">
                     Personal Recommendation
                   </h2>
-
                   <p className="text-[#713600] leading-relaxed mt-4 text-lg">
                     {analysis.recommendation}
                   </p>
-
                 </div>
-
               </div>
-
             </div>
-
           </div>
         )}
-
       </div>
-
     </div>
   );
 }

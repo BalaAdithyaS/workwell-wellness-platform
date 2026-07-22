@@ -23,37 +23,23 @@ function Login() {
         password,
       });
 
-      localStorage.setItem(
-        "token",
-        response.data.access_token
-      );
+      const { access_token, user } = response.data;
 
-      localStorage.setItem(
-        "role",
-        response.data.role
-      );
-
-      localStorage.setItem("team_id", response.data.team_id);
-
-      localStorage.setItem(
-        "user_id",
-        response.data.user_id
-      );
-
-      localStorage.setItem(
-        "name",
-        response.data.name
-      );
+      localStorage.setItem("token", access_token);
+      localStorage.setItem("role", user.role);
+      localStorage.setItem("company", user.company);
+      localStorage.setItem("user_id", user.id);
+      localStorage.setItem("name", user.name);
 
       toast.success("Login Successful");
 
-      if (response.data.role === "manager") {
+      if (user.role === "manager") {
         navigate("/manager");
       } else {
         navigate("/dashboard");
       }
     } catch (error) {
-      console.log(error);
+      console.error(error);
 
       toast.error("Invalid Email or Password");
     } finally {

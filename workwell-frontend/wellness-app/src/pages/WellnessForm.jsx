@@ -2,6 +2,7 @@ import { useState } from "react";
 import API from "../services/api";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+
 function WellnessForm() {
   const moods = [
     { emoji: "😄", label: "Happy", score: 9 },
@@ -17,124 +18,95 @@ function WellnessForm() {
   const [energyLevel, setEnergyLevel] = useState("Moderate");
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [aiResult, setAiResult] = useState(null);
   const navigate = useNavigate();
-const handleSubmit = async (e) => {
-  e.preventDefault();
 
-  if (isSubmitting) return;
+  const deriveSentiment = (moodScore) => {
+    if (moodScore >= 7) return "positive";
+    if (moodScore >= 4) return "neutral";
+    return "negative";
+  };
 
-  if (!selectedMood) {
-    toast.warning("Please select a mood");
-    return;
-  }
+  const deriveRecommendation = (moodScore, stress) => {
+    if (moodScore >= 7 && stress <= 3)
+      return "Great job maintaining your wellness! Keep up the positive habits.";
+    if (moodScore >= 5 && stress <= 5)
+      return "You are doing okay. Try incorporating short breaks and mindfulness exercises into your day.";
+    if (stress >= 5)
+      return "Stress levels are high. Consider talking to a manager or taking time to recharge.";
+    return "Take care of yourself. Reach out to your support network if you need help.";
+  };
 
-  setIsSubmitting(true);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  try {
-    const moodData = moods.find(
-      (m) => m.label === selectedMood
-    );
+    if (isSubmitting) return;
 
-    const userId = localStorage.getItem("user_id");
-
-    if (!userId) {
-      toast.error("User ID not found. Please login again.");
+    if (!selectedMood) {
+      toast.warning("Please select a mood");
       return;
     }
 
-    const payload = {
-      user_id: userId,
-      mood_score: moodData.score,
-      stress_level: stressLevel,
-      burnout_risk:
-        stressLevel >= 5
-          ? 4
-          : stressLevel >= 3
-          ? 2
-          : 1,
-      notes,
-    };
+    setIsSubmitting(true);
 
-    console.log("Submitting:", payload);
-
-    // Submit ONLY ONCE
-    const response = await API.post(
-      "/wellness/submit",
-      payload
-    );
-
-    console.log(response.data);
-
-    // Optional AI analysis
     try {
-      const aiResponse = await API.post(
-        "/ai/analyze",
-        {
-          text: notes || selectedMood,
-        }
+      const moodData = moods.find((m) => m.label === selectedMood);
+
+      const burnoutRisk =
+        stressLevel >= 5 ? 4 : stressLevel >= 3 ? 2 : 1;
+
+      const payload = {
+        mood_score: moodData.score,
+        stress_level: stressLevel,
+        burnout_risk: burnoutRisk,
+        sentiment: deriveSentiment(moodData.score),
+        recommendation: deriveRecommendation(moodData.score, stressLevel),
+        notes: notes || null,
+        sleep_hours: sleepHours ? Number(sleepHours) : null,
+        energy_level: energyLevel,
+      };
+
+      await API.post("/wellness/create", payload);
+
+      setSelectedMood("");
+      setStressLevel(3);
+      setSleepHours("");
+      setEnergyLevel("Moderate");
+      setNotes("");
+
+      toast.success("Wellness Report Submitted Successfully");
+
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 1000);
+    } catch (error) {
+      console.error(error);
+      toast.error(
+        error.response?.data?.detail || "Failed to submit wellness report."
       );
-
-      setAiResult(aiResponse.data);
-
-    } catch (err) {
-      console.log("AI Analysis Failed", err);
+    } finally {
+      setIsSubmitting(false);
     }
+  };
 
-    // Reset form
-    setSelectedMood("");
-    setStressLevel(3);
-    setSleepHours("");
-    setEnergyLevel("Moderate");
-    setNotes("");
-
-    toast.success("Wellness Report Submitted Successfully");
-
-    setTimeout(() => {
-      navigate("/dashboard");
-    }, 1000);
-
-  } catch (error) {
-
-    console.error(error);
-
-    toast.error(
-      error.response?.data?.detail ||
-      "Failed to submit wellness report."
-    );
-
-  } finally {
-
-    setIsSubmitting(false);
-
-  }
-};
-
-console.log("AI RESULT:", aiResult);
   return (
     <div className="min-h-screen bg-[#FDFBD4] p-6 flex items-center justify-center">
       <div className="w-full max-w-4xl bg-white rounded-3xl shadow-xl p-8">
-
         <div className="mb-10">
           <h1 className="text-5xl font-bold text-[#38240D] mb-2">
             Wellness Check
           </h1>
-
           <p className="text-[#713600]">
             Track your daily mental and physical well-being.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
-
           {/* Mood */}
           <div>
             <label className="block mb-4 font-semibold text-[#713600] text-lg">
               How are you feeling today?
             </label>
-
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-
               {moods.map((mood) => (
                 <button
                   key={mood.label}
@@ -146,16 +118,10 @@ console.log("AI RESULT:", aiResult);
                       : "bg-[#FDFBD4] text-[#38240D] hover:bg-[#C05800] hover:text-white"
                   }`}
                 >
-                  <span className="text-4xl mb-3">
-                    {mood.emoji}
-                  </span>
-
-                  <span className="font-medium">
-                    {mood.label}
-                  </span>
+                  <span className="text-4xl mb-3">{mood.emoji}</span>
+                  <span className="font-medium">{mood.label}</span>
                 </button>
               ))}
-
             </div>
           </div>
 
@@ -164,19 +130,15 @@ console.log("AI RESULT:", aiResult);
             <label className="block mb-4 font-semibold text-[#713600] text-lg">
               Stress Level: {stressLevel}
             </label>
-
             <input
               type="range"
               min="1"
               max="6"
               step="1"
               value={stressLevel}
-              onChange={(e) =>
-                setStressLevel(Number(e.target.value))
-              }
+              onChange={(e) => setStressLevel(Number(e.target.value))}
               className="w-full accent-[#C05800]"
             />
-
             <div className="flex justify-between text-[#713600] text-sm mt-2">
               <span>1</span>
               <span>2</span>
@@ -185,7 +147,6 @@ console.log("AI RESULT:", aiResult);
               <span>5</span>
               <span>6</span>
             </div>
-
             <div className="flex justify-between text-xs text-[#713600] mt-1">
               <span>Very Low</span>
               <span></span>
@@ -201,13 +162,10 @@ console.log("AI RESULT:", aiResult);
             <label className="block mb-3 font-semibold text-[#713600] text-lg">
               Sleep Hours
             </label>
-
             <input
               type="number"
               value={sleepHours}
-              onChange={(e) =>
-                setSleepHours(e.target.value)
-              }
+              onChange={(e) => setSleepHours(e.target.value)}
               placeholder="Enter sleep duration"
               className="w-full p-4 rounded-2xl border border-[#713600]/20 focus:outline-none focus:ring-2 focus:ring-[#C05800]"
             />
@@ -218,12 +176,9 @@ console.log("AI RESULT:", aiResult);
             <label className="block mb-3 font-semibold text-[#713600] text-lg">
               Energy Level
             </label>
-
             <select
               value={energyLevel}
-              onChange={(e) =>
-                setEnergyLevel(e.target.value)
-              }
+              onChange={(e) => setEnergyLevel(e.target.value)}
               className="w-full p-4 rounded-2xl border border-[#713600]/20 focus:outline-none focus:ring-2 focus:ring-[#C05800]"
             >
               <option>Very Low</option>
@@ -239,12 +194,9 @@ console.log("AI RESULT:", aiResult);
             <label className="block mb-3 font-semibold text-[#713600] text-lg">
               Additional Notes
             </label>
-
             <textarea
               value={notes}
-              onChange={(e) =>
-                setNotes(e.target.value)
-              }
+              onChange={(e) => setNotes(e.target.value)}
               placeholder="Write anything about your day..."
               className="w-full p-4 rounded-2xl border border-[#713600]/20 h-36 focus:outline-none focus:ring-2 focus:ring-[#C05800]"
             />
@@ -256,11 +208,8 @@ console.log("AI RESULT:", aiResult);
             disabled={isSubmitting}
             className="w-full bg-[#C05800] hover:bg-[#713600] text-white py-4 rounded-2xl text-lg font-semibold transition-all duration-300 shadow-md hover:shadow-xl disabled:opacity-50"
           >
-            {isSubmitting
-              ? "Submitting..."
-              : "Submit Wellness Report"}
+            {isSubmitting ? "Submitting..." : "Submit Wellness Report"}
           </button>
-          
         </form>
       </div>
     </div>

@@ -2,10 +2,24 @@
 backend/venv/
 backend/.env
 
+# Backend v2
+backend-v2/.env
+backend-v2/server.log
+backend-v2/server_err.log
+backend-v2/.ruff_cache/
+
 # Frontend
 frontend/node_modules/
 frontend/dist/
 frontend/.env
+workwell-frontend/wellness-app/node_modules/
+workwell-frontend/wellness-app/dist/
+
+# Archives
+*.zip
+
+# Logs
+vite.log
 
 # Python
 __pycache__/
