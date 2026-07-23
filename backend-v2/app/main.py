@@ -41,8 +41,9 @@ async def lifespan(app: FastAPI):
     try:
         with SessionLocal() as db:
             db.execute(text("ALTER TABLE teams ADD COLUMN IF NOT EXISTS company VARCHAR(200) DEFAULT 'WorkWell' NOT NULL"))
+            db.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS company VARCHAR(200) DEFAULT 'WorkWell' NOT NULL"))
             db.commit()
-            logger.info("Successfully ensured company column exists in teams table.")
+            logger.info("Successfully ensured company column exists in teams and users tables.")
     except Exception as exc:
         logger.error("Schema migration failed: %s", exc)
         
