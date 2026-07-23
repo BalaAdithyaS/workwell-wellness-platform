@@ -98,7 +98,7 @@ async def analyze_transcript(transcript: str) -> VoiceAnalysisResult:
         ],
         "generationConfig": {
             "temperature": 0.3,
-            "maxOutputTokens": 1024,
+            "maxOutputTokens": 2048,
             "responseMimeType": "application/json",
         },
     }
@@ -197,7 +197,7 @@ async def generate_next_question(
         ],
         "generationConfig": {
             "temperature": 0.7,
-            "maxOutputTokens": 256,
+            "maxOutputTokens": 2048,
             "responseMimeType": "application/json",
         },
     }
