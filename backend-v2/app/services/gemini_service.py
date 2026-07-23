@@ -71,8 +71,16 @@ def _parse_gemini_json(data: dict) -> str:
     text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
     if not text.strip():
         raise RuntimeError("Gemini returned empty response text")
+    
+    # Strip markdown blocks
     text = re.sub(r"```(?:json)?\s*", "", text).strip()
     text = re.sub(r"```\s*$", "", text).strip()
+    
+    # Extract the first JSON object
+    match = re.search(r"\{.*\}", text, re.DOTALL)
+    if match:
+        text = match.group(0)
+        
     return text
 
 
@@ -91,6 +99,7 @@ async def analyze_transcript(transcript: str) -> VoiceAnalysisResult:
         "generationConfig": {
             "temperature": 0.3,
             "maxOutputTokens": 1024,
+            "responseMimeType": "application/json",
         },
     }
 
@@ -189,6 +198,7 @@ async def generate_next_question(
         "generationConfig": {
             "temperature": 0.7,
             "maxOutputTokens": 256,
+            "responseMimeType": "application/json",
         },
     }
 
@@ -199,7 +209,12 @@ async def generate_next_question(
         try:
             data = await asyncio.to_thread(_call_gemini_sync, payload)
             text = _parse_gemini_json(data)
-            parsed = json.loads(text)
+            try:
+                parsed = json.loads(text)
+            except json.JSONDecodeError as exc:
+                logger.error("Failed to parse Gemini JSON: %s\nRaw: %s", exc, text)
+                raise ValueError(f"Malformed AI response: {exc}") from exc
+            
             return VoiceChatResponse(
                 next_question=parsed.get("next_question"),
                 done=parsed.get("done", parsed.get("next_question") is None),

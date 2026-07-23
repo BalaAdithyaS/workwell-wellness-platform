@@ -85,6 +85,11 @@ async def chat_voice(
     except Exception as exc:
         logger.exception("Voice chat failed for user=%s", current_user.id)
         error_msg = str(exc)
+        if "Malformed AI response" in error_msg:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="The AI generated an invalid or incomplete response that could not be parsed.",
+            )
         if _is_quota_error(error_msg):
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
