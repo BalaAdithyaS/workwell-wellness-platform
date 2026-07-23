@@ -129,7 +129,7 @@ def detailed_health() -> dict[str, str]:
         result["status"] = "degraded"
     return result
 
-import requests
+import httpx
 @app.get("/gemini-test", tags=["health"])
 def test_gemini_api_key():
     import json
@@ -139,7 +139,7 @@ def test_gemini_api_key():
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={key}"
     payload = {"contents": [{"parts": [{"text": "Hello"}]}]}
     try:
-        resp = requests.post(url, json=payload, headers={"Content-Type": "application/json"})
+        resp = httpx.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=10.0)
         return {
             "key_loaded": is_loaded,
             "key_length": key_length,
