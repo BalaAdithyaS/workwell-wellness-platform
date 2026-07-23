@@ -42,8 +42,18 @@ async def lifespan(app: FastAPI):
         with SessionLocal() as db:
             db.execute(text("ALTER TABLE teams ADD COLUMN IF NOT EXISTS company VARCHAR(200) DEFAULT 'WorkWell' NOT NULL"))
             db.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS company VARCHAR(200) DEFAULT 'WorkWell' NOT NULL"))
+            
+            # Create ENUM type safely
+            db.execute(text("DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'source_enum') THEN CREATE TYPE source_enum AS ENUM ('FORM', 'VOICE'); END IF; END $$;"))
+            
+            # Add all columns for wellness_entries
+            db.execute(text("ALTER TABLE wellness_entries ADD COLUMN IF NOT EXISTS source source_enum DEFAULT 'FORM' NOT NULL"))
             db.execute(text("ALTER TABLE wellness_entries ADD COLUMN IF NOT EXISTS sleep_hours FLOAT"))
             db.execute(text("ALTER TABLE wellness_entries ADD COLUMN IF NOT EXISTS energy_level VARCHAR(50)"))
+            db.execute(text("ALTER TABLE wellness_entries ADD COLUMN IF NOT EXISTS burnout_risk INTEGER DEFAULT 0 NOT NULL"))
+            db.execute(text("ALTER TABLE wellness_entries ADD COLUMN IF NOT EXISTS sentiment VARCHAR(50) DEFAULT 'Neutral' NOT NULL"))
+            db.execute(text("ALTER TABLE wellness_entries ADD COLUMN IF NOT EXISTS recommendation TEXT DEFAULT '' NOT NULL"))
+            
             db.commit()
             logger.info("Successfully ensured missing columns exist in all tables.")
     except Exception as exc:
