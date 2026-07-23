@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str
 
     # ── CORS ──────────────────────────────────────────────────
-    CORS_ORIGINS: str = "*"
+    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:4173,http://127.0.0.1:8000,https://workwell-wellness-platform.vercel.app"
 
     # ── Rate limiting ─────────────────────────────────────────
     LOGIN_RATE_LIMIT: int = 10
