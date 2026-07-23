@@ -128,28 +128,3 @@ def detailed_health() -> dict[str, str]:
         result["database"] = "unavailable"
         result["status"] = "degraded"
     return result
-
-import httpx
-@app.get("/gemini-test", tags=["health"])
-def test_gemini_api_key():
-    import json
-    key = settings.GEMINI_API_KEY
-    is_loaded = bool(key)
-    key_length = len(key) if key else 0
-    key_prefix = key[:5] if key else ""
-    key_suffix = key[-5:] if key else ""
-    
-    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
-    payload = {"contents": [{"parts": [{"text": "Hello"}]}]}
-    try:
-        resp = httpx.post(url, json=payload, headers={"Content-Type": "application/json", "x-goog-api-key": key}, timeout=10.0)
-        return {
-            "key_loaded": is_loaded,
-            "key_length": key_length,
-            "key_prefix": key_prefix,
-            "key_suffix": key_suffix,
-            "gemini_status": resp.status_code,
-            "gemini_response": resp.json() if resp.text else ""
-        }
-    except Exception as e:
-        return {"error": str(e)}
