@@ -37,6 +37,15 @@ async def lifespan(app: FastAPI):
     logger.info("Creating database tables if they don't exist...")
     Base.metadata.create_all(bind=engine)
     logger.info("Tables ready.")
+    
+    try:
+        with SessionLocal() as db:
+            db.execute(text("ALTER TABLE teams ADD COLUMN IF NOT EXISTS company VARCHAR(200) DEFAULT 'WorkWell' NOT NULL"))
+            db.commit()
+            logger.info("Successfully ensured company column exists in teams table.")
+    except Exception as exc:
+        logger.error("Schema migration failed: %s", exc)
+        
     yield
     engine.dispose()
     logger.info("Database connections disposed.")
