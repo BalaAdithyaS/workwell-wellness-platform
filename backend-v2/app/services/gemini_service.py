@@ -56,7 +56,7 @@ def _call_gemini_sync(payload: dict) -> dict:
     with httpx.Client(timeout=30.0) as client:
         response = client.post(
             GEMINI_URL,
-            params={"key": settings.GEMINI_API_KEY},
+            headers={"x-goog-api-key": settings.GEMINI_API_KEY},
             json=payload,
         )
     response.raise_for_status()
@@ -102,7 +102,7 @@ async def analyze_transcript(transcript: str) -> VoiceAnalysisResult:
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.post(
                     GEMINI_URL,
-                    params={"key": settings.GEMINI_API_KEY},
+                    headers={"x-goog-api-key": settings.GEMINI_API_KEY},
                     json=payload,
                 )
 
